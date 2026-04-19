@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flexistore Manager',
       theme: ThemeData(
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const MyHomePage(),
     );
@@ -24,7 +24,13 @@ class MyHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('FlexiStore Manager (Phase 1 & 2 Only)'),
+      ),
+      body: const Center(
+        child: Text('Workspace strictly isolated to Infrastructure.'),
+      ),
+    );
   }
 }
-
