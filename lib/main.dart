@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/app_router.dart';
 
 void main() {
   runApp(const MyApp());
@@ -9,28 +10,17 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flexistore Manager',
+    return MaterialApp.router(
+      title: 'FlexiStore Manager',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF3B82F6),
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatelessWidget {
-  const MyHomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('FlexiStore Manager (Phase 1 & 2 Only)'),
-      ),
-      body: const Center(
-        child: Text('Workspace strictly isolated to Infrastructure.'),
-      ),
+      debugShowCheckedModeBanner: false,
+      routerConfig: appRouter,
     );
   }
 }
