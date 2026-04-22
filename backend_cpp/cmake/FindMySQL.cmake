@@ -39,6 +39,7 @@ find_library(MYSQL_LIBRARIES
         mysqlcppconn                  # Release build
         mysqlcppconn-static           # Static variant
         mysqlcppconn8                 # Connector 8.x / X DevAPI variant
+        mysqlcppconn9
     HINTS
         ${MYSQL_ROOT}
         $ENV{MYSQL_DIR}
@@ -48,11 +49,13 @@ find_library(MYSQL_LIBRARIES
         "C:/Program Files/MySQL/MySQL Connector C++ 9.0"
         "C:/Program Files/MySQL/MySQL Connector C++ 9.1"
         "C:/Program Files/MySQL/MySQL Connector C++ 9.2"
+        "C:/Program Files/MySQL/MySQL Connector C++ 9.7"
         "C:/Program Files (x86)/MySQL/MySQL Connector C++ 8.0"
         "C:/mysql-connector-c++"
     PATH_SUFFIXES
         lib
         lib64
+        lib64/vs14
         lib/vs14
         lib/opt
 )

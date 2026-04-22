@@ -5,6 +5,9 @@
 # Dependencies: MySQL Connector/C++ (libmysqlcppconn)
 ################################################################################
 cmake_minimum_required(VERSION 3.20)
+if(POLICY CMP0144)
+    cmake_policy(SET CMP0144 NEW)
+endif()
 project(flexistore VERSION 1.0.0 LANGUAGES CXX)
 
 # ── C++17 Standard ────────────────────────────────────────────────────────────
@@ -16,7 +19,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # ── Locate MySQL Connector/C++ ────────────────────────────────────────────────
+# Note: MySQL package name changed from "MySQL" to "MySQLConnector" in newer FindMySQL.cmake
+# Try both package names to be robust
 find_package(MySQL REQUIRED)
+if(NOT MySQL_FOUND)
+    find_package(MySQLConnector REQUIRED)
+endif()
 
 # ── Collect ALL source files from every team module ───────────────────────────
 file(GLOB_RECURSE CORE_SOURCES        "src/core/*.cpp")
