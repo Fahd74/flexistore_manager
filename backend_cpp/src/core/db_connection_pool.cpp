@@ -90,9 +90,9 @@ unique_ptr<sql::Connection> DBConnectionPool::createConnection() {
         conn->setAutoCommit(true);
         return conn;
     }
-    catch (const SQLException& e) {
+    catch (const sql::SQLException& e) {
         cerr << "[DBConnectionPool] Failed to create connection: "
-                << e.what() << endl;
+            << e.what() << endl;
         return nullptr;
     }
 }
