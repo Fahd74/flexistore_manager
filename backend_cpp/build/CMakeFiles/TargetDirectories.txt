@@ -1,3 +1,0 @@
-C:/Users/ASUS/StudioProjects/flexistore_manager/backend_cpp/build/CMakeFiles/flexistore.dir
-C:/Users/ASUS/StudioProjects/flexistore_manager/backend_cpp/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/ASUS/StudioProjects/flexistore_manager/backend_cpp/build/CMakeFiles/ZERO_CHECK.dir

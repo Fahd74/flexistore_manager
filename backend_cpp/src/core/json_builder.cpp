@@ -43,6 +43,13 @@ void JsonBuilder::start_object() {
     first_item_ = true;
 }
 
+void JsonBuilder::start_object(const std::string& key) {
+    prepare_insert(true);
+    buffer_ << "\"" << escape_string(key) << "\":{";
+    is_object_stack_.push_back(true);
+    first_item_ = true;
+}
+
 void JsonBuilder::end_object() {
     buffer_ << "}";
     if (!is_object_stack_.empty()) {
@@ -54,6 +61,13 @@ void JsonBuilder::end_object() {
 void JsonBuilder::start_array() {
     prepare_insert();
     buffer_ << "[";
+    is_object_stack_.push_back(false);
+    first_item_ = true;
+}
+
+void JsonBuilder::start_array(const std::string& key) {
+    prepare_insert(true);
+    buffer_ << "\"" << escape_string(key) << "\":[";
     is_object_stack_.push_back(false);
     first_item_ = true;
 }

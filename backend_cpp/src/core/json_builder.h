@@ -18,8 +18,10 @@ public:
     ~JsonBuilder() = default;
 
     void start_object();
+    void start_object(const std::string& key);
     void end_object();
     void start_array();
+    void start_array(const std::string& key);
     void end_array();
 
     void add_string(const std::string& key, const std::string& value);
