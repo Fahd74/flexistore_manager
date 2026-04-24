@@ -52,6 +52,8 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+# === FlexiStore C++ Backend Integration ===
+add_subdirectory("../backend_cpp" "backend_cpp")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
@@ -87,11 +89,20 @@ if(PLUGIN_BUNDLED_LIBRARIES)
     COMPONENT Runtime)
 endif()
 
+# Install our C++ backend and MySQL dependencies for release builds
+install(FILES "$<TARGET_FILE:flexistore>"
+        "C:/Program Files/MySQL/MySQL Connector C++ 9.7/lib64/mysqlcppconn-10-vs14.dll"
+        "C:/Program Files/MySQL/MySQL Connector C++ 9.7/lib64/libcrypto-3-x64.dll"
+        "C:/Program Files/MySQL/MySQL Connector C++ 9.7/lib64/libssl-3-x64.dll"
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    COMPONENT Runtime)
+
 # Copy the native assets provided by the build.dart from all packages.
 set(NATIVE_ASSETS_DIR "${PROJECT_BUILD_DIR}native_assets/windows/")
 install(DIRECTORY "${NATIVE_ASSETS_DIR}"
    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
-   COMPONENT Runtime)
+   COMPONENT Runtime
+   OPTIONAL)
 
 # Fully re-copy the assets directory on each build to avoid having stale files
 # from a previous install.

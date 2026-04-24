@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(100) NOT NULL,
     username VARCHAR(50) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('admin', 'cashier') NOT NULL DEFAULT 'cashier',
+    role ENUM('admin', 'cashier','manager') NOT NULL DEFAULT 'cashier',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
@@ -106,3 +106,10 @@ CREATE TABLE IF NOT EXISTS transaction_logs (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_txlog_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+USE flexistore;
+ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'cashier', 'manager') NOT NULL DEFAULT 'cashier';
+INSERT INTO users (name, username, password_hash, role) VALUES 
+('System Admin', 'admin1', 'admin123', 'admin'),
+('Cashier One', 'cashier1', '123456', 'cashier'),
+('Inventory Manager', 'store_mng', 'store123', 'manager');

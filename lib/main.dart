@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 import 'core/app_router.dart';
+import 'core/native_bridge.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  try {
+    NativeBridge().initialize();
+    int dbStatus = NativeBridge().initializeDatabase();
+    print('Database Initialization Status: $dbStatus');
+  } catch (e) {
+    print('Error initializing native bridge: $e');
+  }
+  
   runApp(const MyApp());
 }
 

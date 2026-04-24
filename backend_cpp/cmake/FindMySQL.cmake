@@ -26,6 +26,7 @@ find_path(MYSQL_INCLUDE_DIRS
         "C:/Program Files/MySQL/MySQL Connector C++ 9.0"
         "C:/Program Files/MySQL/MySQL Connector C++ 9.1"
         "C:/Program Files/MySQL/MySQL Connector C++ 9.2"
+        "C:/Program Files/MySQL/MySQL Connector C++ 9.7"
         "C:/Program Files (x86)/MySQL/MySQL Connector C++ 8.0"
         "C:/mysql-connector-c++"
     PATH_SUFFIXES

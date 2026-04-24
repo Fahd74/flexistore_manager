@@ -41,7 +41,7 @@ static const char* SQL_CREATE_USERS =
     "  name           VARCHAR(100)  NOT NULL,"
     "  username       VARCHAR(50)   NOT NULL UNIQUE,"
     "  password_hash  VARCHAR(255)  NOT NULL,"
-    "  role           ENUM('admin','cashier') NOT NULL DEFAULT 'cashier',"
+    "role ENUM('admin', 'cashier', 'manager') NOT NULL DEFAULT 'cashier',"
     "  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
     "  updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
@@ -179,7 +179,9 @@ static const vector<const char*> TABLE_NAMES = {
 // ═════════════════════════════════════════════════════════════════════════════
 // Exported Function: initialize_database()
 // ═════════════════════════════════════════════════════════════════════════════
-int initialize_database() {
+extern "C" {
+
+FLEXISTORE_EXPORT int initialize_database() {
     try {
         auto& pool = flexistore::DBConnectionPool::getInstance();
         auto conn = pool.getConnection();
@@ -223,8 +225,7 @@ int initialize_database() {
                 ));
                 pstmt->setString(1, "Administrator");
                 pstmt->setString(2, "admin");
-                // SHA-256 hash of "admin123" — teams should replace with bcrypt in production
-                pstmt->setString(3, "240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9");
+                pstmt->setString(3, "admin123");
                 pstmt->setString(4, "admin");
                 pstmt->executeUpdate();
                 cout << "[db_initializer] Default admin user created (admin / admin123)." << endl;
@@ -245,4 +246,5 @@ int initialize_database() {
         std::cerr << "[db_initializer] ERROR — " << e.what() << std::endl;
         return FFI_ERROR_DB_INIT;
     }
+}
 }

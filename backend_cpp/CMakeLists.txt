@@ -16,7 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # ── Append our custom cmake/ directory so FindMySQL.cmake is discoverable ─────
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # ── Locate MySQL Connector/C++ ────────────────────────────────────────────────
 # Note: MySQL package name changed from "MySQL" to "MySQLConnector" in newer FindMySQL.cmake
@@ -56,8 +56,9 @@ target_compile_definitions(flexistore PRIVATE FLEXISTORE_EXPORTS)
 # ── Include paths ─────────────────────────────────────────────────────────────
 target_include_directories(flexistore
     PRIVATE
-        ${CMAKE_SOURCE_DIR}/src          # allows includes like "core/db_config.h"
+        ${CMAKE_CURRENT_SOURCE_DIR}/src          # allows includes like "core/db_config.h"
         ${MYSQL_INCLUDE_DIRS}            # MySQL Connector headers
+        ${MYSQL_INCLUDE_DIRS}/jdbc       # For MySQL Connector 9.x JDBC compatibility
 )
 
 # ── Link MySQL Connector/C++ ─────────────────────────────────────────────────
@@ -65,7 +66,9 @@ target_link_libraries(flexistore PRIVATE ${MYSQL_LIBRARIES})
 
 # ── Windows-specific: suppress min/max macros that break <algorithm> ──────────
 if(WIN32)
-    target_compile_definitions(flexistore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+    target_compile_definitions(flexistore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _ITERATOR_DEBUG_LEVEL=0)
+    # Enforce Release CRT (/MD) to avoid bad_alloc and ABI mismatches with MySQL Connector
+    set_property(TARGET flexistore PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
 endif()
 
 # ── Output the DLL directly into a predictable location ───────────────────────

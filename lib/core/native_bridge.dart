@@ -34,4 +34,15 @@ class NativeBridge {
 
   /// Exposes the loaded dynamic library to allow function lookups.
   DynamicLibrary get lib => _lib;
+
+  /// Initializes the MySQL database (creates schema, tables, default user).
+  int initializeDatabase() {
+    try {
+      final initDb = _lib.lookupFunction<Int32 Function(), int Function()>('initialize_database');
+      return initDb();
+    } catch (e) {
+      print('Failed to bind or call initialize_database: $e');
+      return -999;
+    }
+  }
 }

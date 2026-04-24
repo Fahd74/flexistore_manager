@@ -20,7 +20,7 @@ namespace config {
     // ── Connection Parameters ────────────────────────────────────────────────
     inline const string DB_HOST     = "127.0.0.1";
     inline const string DB_USER     = "root";
-    inline const string DB_PASSWORD = "";             // Set your MySQL root password
+    inline const string DB_PASSWORD = "1234";             // Set your MySQL root password
     inline const string DB_NAME     = "flexistore";
     inline const unsigned int DB_PORT    = 3306;
 
