@@ -150,12 +150,7 @@ class _SidebarWidgetState extends State<SidebarWidget> {
   Widget _buildMenuItem(Map<String, dynamic> item, bool isSelected, {bool isLogout = false}) {
     return InkWell(
       onTap: () {
-        if (isLogout) {
-          // TODO: Call NativeBridge auth logout
-          print('Logout clicked');
-        } else {
-          context.go(item['route'] as String);
-        }
+        context.go(item['route'] as String);
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

@@ -3,8 +3,15 @@ import 'sidebar_widget.dart';
 
 class AppShell extends StatelessWidget {
   final Widget child;
+  final String userName;
+  final String userRole;
 
-  const AppShell({super.key, required this.child});
+  const AppShell({
+    super.key, 
+    required this.child,
+    this.userName = 'User',
+    this.userRole = 'Unknown',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -129,17 +136,17 @@ class AppShell extends StatelessWidget {
                 child: const Icon(Icons.person_outline, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              const Column(
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Admin User', 
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)
+                    userName, 
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)
                   ),
                   Text(
-                    'Administrator', 
-                    style: TextStyle(color: Colors.white54, fontSize: 12)
+                    userRole, 
+                    style: const TextStyle(color: Colors.white54, fontSize: 12)
                   ),
                 ],
               ),

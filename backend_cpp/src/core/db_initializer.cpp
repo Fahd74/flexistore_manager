@@ -191,35 +191,42 @@ FLEXISTORE_EXPORT int initialize_database() {
             return FFI_ERROR_DB_CONNECTION;
         }
 
+        // RAII — ensure connection always returns to pool
+        struct ConnGuard {
+            flexistore::DBConnectionPool& p;
+            std::unique_ptr<sql::Connection> c;
+            ~ConnGuard() { if (c) p.releaseConnection(std::move(c)); }
+        } guard{pool, std::move(conn)};
+
         // ── Step 1: Create the database if it doesn't exist ──────────────
         {
-            unique_ptr<sql::Statement> stmt(conn->createStatement());
+            unique_ptr<sql::Statement> stmt(guard.c->createStatement());
             stmt->execute(SQL_CREATE_DATABASE);
             cout << "[db_initializer] Database 'flexistore' ensured." << endl;
         }
 
         // ── Step 2: Switch to the flexistore database ────────────────────
         {
-            unique_ptr<sql::Statement> stmt(conn->createStatement());
+            unique_ptr<sql::Statement> stmt(guard.c->createStatement());
             stmt->execute(SQL_USE_DATABASE);
         }
 
         // ── Step 3: Create all 9 tables in dependency order ──────────────
         for (size_t i = 0; i < TABLE_CREATION_STATEMENTS.size(); ++i) {
-            unique_ptr<sql::Statement> stmt(conn->createStatement());
+            unique_ptr<sql::Statement> stmt(guard.c->createStatement());
             stmt->execute(TABLE_CREATION_STATEMENTS[i]);
             cout << "[db_initializer] Table '" << TABLE_NAMES[i] << "' ensured." << endl;
         }
 
         // ── Step 4: Seed a default admin user if users table is empty ────
         {
-            unique_ptr<sql::Statement> stmt(conn->createStatement());
+            unique_ptr<sql::Statement> stmt(guard.c->createStatement());
             unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
                 "SELECT COUNT(*) AS cnt FROM users"
             ));
 
             if (rs->next() && rs->getInt("cnt") == 0) {
-                unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(
+                unique_ptr<sql::PreparedStatement> pstmt(guard.c->prepareStatement(
                     "INSERT INTO users (name, username, password_hash, role) "
                     "VALUES (?, ?, ?, ?)"
                 ));
@@ -231,8 +238,6 @@ FLEXISTORE_EXPORT int initialize_database() {
                 cout << "[db_initializer] Default admin user created (admin / admin123)." << endl;
             }
         }
-
-        pool.releaseConnection(move(conn));
         cout << "[db_initializer] ✔ Database initialization complete." << endl;
         return FFI_SUCCESS;
     }

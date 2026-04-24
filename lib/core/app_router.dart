@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import 'app_shell.dart';
 import '../auth/screens/login_screen.dart';
-
+import '../auth/data/auth_ffi.dart';
 import '../dashboard/screens/dashboard_screen.dart';
 
-// Placeholder widgets for modules
+// ── Placeholder widgets for modules not yet implemented ──────────────────────
 class PosScreen extends StatelessWidget {
   const PosScreen({super.key});
   @override
@@ -64,8 +65,28 @@ class AuditScreen extends StatelessWidget {
 
 final appRouter = GoRouter(
   initialLocation: '/login',
+  // ── Route Guard ──────────────────────────────────────────────────────────────
+  // TODO: Re-enable this guard once get_current_user_id() is exported via FFI
+  // and wired up in SessionNativeAPI. Currently disabled to avoid silent
+  // redirect loop (currentUserId was hardcoded -1 → always bouncing to /login).
+  // redirect: (context, state) {
+  //   final int currentUserId = SessionNativeAPI.instance.getCurrentUserId();
+  //   final bool isLoggedIn = currentUserId != -1;
+  //   final bool isLogin = state.matchedLocation == '/login';
+  //   if (isLoggedIn && isLogin) return '/dashboard';
+  //   if (!isLoggedIn && !isLogin) return '/login';
+  //   return null;
+  // },
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
+    // Logout route – clears session and redirects to login
+    GoRoute(
+      path: '/logout',
+      redirect: (context, state) {
+        AuthNativeAPI.instance.attemptLogout();
+        return '/login';
+      },
+    ),
     ShellRoute(
       builder: (context, state, child) {
         return AppShell(child: child);

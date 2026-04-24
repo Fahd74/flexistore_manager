@@ -2,6 +2,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import '../../core/native_bridge.dart';
+import '../../core/ffi_helpers.dart';
 
 // ── FFI Signatures ───────────────────────────────────────────────────────────
 typedef LoginC = Int32 Function(Pointer<Utf8> username, Pointer<Utf8> passwordHash);
@@ -38,16 +39,16 @@ class AuthNativeAPI {
     if (!_isInitialized) return -999; // Custom error code for bridge failure
 
     // We send the plaintext password directly as requested
-    final Pointer<Utf8> userPtr = user.toNativeUtf8();
-    final Pointer<Utf8> passPtr = pass.toNativeUtf8();
+    final Pointer<Utf8> userPtr = toNativeUtf8(user);
+    final Pointer<Utf8> passPtr = toNativeUtf8(pass);
 
     try {
       final result = _login(userPtr, passPtr);
       return result;
     } finally {
-      // Memory Safety: Always free pointers created with toNativeUtf8()
-      malloc.free(userPtr);
-      malloc.free(passPtr);
+      // Memory Safety: Always free pointers created with toNativeUtf8() using calloc
+      calloc.free(userPtr);
+      calloc.free(passPtr);
     }
   }
 
