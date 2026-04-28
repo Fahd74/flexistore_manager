@@ -1,3 +1,5 @@
+import 'package:flexistore_manager/audit/screens/inventory_logs_screen.dart';
+import 'package:flexistore_manager/audit/screens/transaction_logs_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -102,10 +104,10 @@ final appRouter = GoRouter(
         GoRoute(path: '/inventory', builder: (context, state) => const InventoryScreen()),
         GoRoute(
           path: '/transactions',
-          builder: (context, state) => const TransactionsScreen(),
+          builder: (context, state) => const TransactionLogsScreen(),
         ),
         GoRoute(path: '/returns', builder: (context, state) => const ReturnsScreen()),
-        GoRoute(path: '/audit', builder: (context, state) => const AuditScreen()),
+        GoRoute(path: '/audit', builder: (context, state) => const InventoryLogsScreen()),
       ],
     ),
   ],
