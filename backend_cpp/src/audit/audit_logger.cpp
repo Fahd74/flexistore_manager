@@ -19,7 +19,7 @@ namespace {
 
 extern "C" {
 
-FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const char* action_type, int qty_changed) {
+FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const char* action_type, int quantity_changed) {
     std::lock_guard<std::mutex> lock(audit_mutex);
     try {
         if (!action_type) return;
@@ -32,14 +32,14 @@ FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const c
         }
 
         std::unique_ptr<sql::PreparedStatement> pstmt(guard.c->prepareStatement(
-            "INSERT INTO inventory_logs (product_id, user_id, action_type, qty_changed) "
+            "INSERT INTO inventory_logs (product_id, user_id, action_type, quantity_changed) "
             "VALUES (?, ?, ?, ?)"
         ));
 
         pstmt->setInt(1, product_id);
         pstmt->setInt(2, user_id);
         pstmt->setString(3, action_type);
-        pstmt->setInt(4, qty_changed);
+        pstmt->setInt(4, quantity_changed);
 
         pstmt->executeUpdate();
 
@@ -86,16 +86,12 @@ FLEXISTORE_EXPORT const char* get_inventory_logs() {
         auto& pool = flexistore::DBConnectionPool::getInstance();
         ConnGuard guard{pool, pool.getConnection()};
         if (!guard.c) {
-            #ifdef _WIN32
-            return _strdup("[{\"error\":\"DB Connection Failed\"}]");
-            #else
-            return strdup("[{\"error\":\"DB Connection Failed\"}]");
-            #endif
+            return flexistore::allocate_ffi_string("[{\"error\":\"DB Connection Failed\"}]");
         }
 
         std::unique_ptr<sql::Statement> stmt(guard.c->createStatement());
         std::unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
-            "SELECT id, product_id, user_id, action_type, qty_changed, created_at "
+            "SELECT id, product_id, user_id, action_type, quantity_changed, created_at "
             "FROM inventory_logs ORDER BY created_at DESC LIMIT 50"
         ));
 
@@ -117,21 +113,41 @@ FLEXISTORE_EXPORT const char* get_transaction_logs() {
         auto& pool = flexistore::DBConnectionPool::getInstance();
         ConnGuard guard{pool, pool.getConnection()};
         if (!guard.c) {
-            #ifdef _WIN32
-            return _strdup("[{\"error\":\"DB Connection Failed\"}]");
-            #else
-            return strdup("[{\"error\":\"DB Connection Failed\"}]");
-            #endif
+            return flexistore::allocate_ffi_string("[{\"error\":\"DB Connection Failed\"}]");
         }
 
         std::unique_ptr<sql::Statement> stmt(guard.c->createStatement());
         std::unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
-            "SELECT id, user_id, action_type, amount, created_at "
+            "SELECT id, user_id, action_type, "
+            "CAST(amount AS CHAR) AS amount, "
+            "CAST(created_at AS CHAR) AS created_at "
             "FROM transaction_logs ORDER BY created_at DESC LIMIT 50"
         ));
 
-        std::string json_str = flexistore::JsonBuilder::result_set_to_json(rs.get());
-        return flexistore::allocate_ffi_string(json_str);
+        // Build JSON manually — avoids result_set_to_json which triggers
+        // MySQL Connector internal DECIMAL handling and corrupts Debug CRT heap
+        flexistore::JsonBuilder builder;
+        builder.start_array();
+        while (rs->next()) {
+            builder.start_object();
+            builder.add_int("id", rs->getInt("id"));
+            builder.add_int("user_id", rs->getInt("user_id"));
+            builder.add_string("action_type", rs->getString("action_type"));
+
+            // amount was CAST to CHAR in SQL — parse safely in C++
+            std::string amount_str = rs->getString("amount");
+            try {
+                builder.add_double("amount", std::stod(amount_str));
+            } catch (...) {
+                builder.add_double("amount", 0.0);
+            }
+
+            builder.add_string("created_at", rs->getString("created_at"));
+            builder.end_object();
+        }
+        builder.end_array();
+
+        return flexistore::allocate_ffi_string(builder.build());
 
     } catch (const sql::SQLException& e) {
         std::string err_msg = std::string("[{\"error\":\"SQLException: ") + e.what() + "\"}]";

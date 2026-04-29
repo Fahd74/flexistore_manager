@@ -162,10 +162,21 @@ std::string JsonBuilder::result_set_to_json(sql::ResultSet* res) {
                     break;
                 case sql::DataType::REAL:
                 case sql::DataType::DOUBLE:
-                case sql::DataType::DECIMAL:
-                case sql::DataType::NUMERIC:
                     builder.add_double(col_name, res->getDouble(i));
                     break;
+                case sql::DataType::DECIMAL:
+                case sql::DataType::NUMERIC: {
+                    // MySQL Connector/C++ on Windows often corrupts the heap when calling getDouble() 
+                    // directly on DECIMAL/NUMERIC types due to CRT ABI mismatches.
+                    // Fetching as string and converting manually bypasses this issue.
+                    std::string val_str = res->getString(i);
+                    try {
+                        builder.add_double(col_name, std::stod(val_str));
+                    } catch (...) {
+                        builder.add_double(col_name, 0.0);
+                    }
+                    break;
+                }
                 case sql::DataType::BIT:
                     builder.add_bool(col_name, res->getBoolean(i));
                     break;
@@ -183,11 +194,12 @@ std::string JsonBuilder::result_set_to_json(sql::ResultSet* res) {
 }
 
 const char* allocate_ffi_string(const std::string& str) {
-#ifdef _WIN32
-    return _strdup(str.c_str());
-#else
-    return strdup(str.c_str());
-#endif
+    const size_t len = str.size() + 1; // +1 for null terminator
+    char* buf = static_cast<char*>(std::malloc(len));
+    if (buf) {
+        std::memcpy(buf, str.c_str(), len);
+    }
+    return buf;
 }
 
 } // namespace flexistore

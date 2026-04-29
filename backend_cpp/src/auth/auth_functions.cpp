@@ -38,7 +38,7 @@ FLEXISTORE_EXPORT int login(const char* username, const char* password_hash) {
         } releaser{pool, std::move(conn)};
 
         std::unique_ptr<sql::PreparedStatement> pstmt(
-            releaser.c->prepareStatement("SELECT id, role FROM users WHERE username = ? AND password_hash = ?")
+            releaser.c->prepareStatement("SELECT id, name, role FROM users WHERE username = ? AND password_hash = ?")
         );
 
         pstmt->setString(1, username);
@@ -48,9 +48,10 @@ FLEXISTORE_EXPORT int login(const char* username, const char* password_hash) {
 
         if (res->next()) {
             int id = res->getInt("id");
+            std::string name = res->getString("name");
             std::string role = res->getString("role");
             
-            SessionManager::get_instance().set_session(id, role);
+            SessionManager::get_instance().set_session(id, role, name);
             return FFI_SUCCESS; // Connection automatically returned to pool by releaser
         } else {
             return FFI_ERROR_AUTH_INVALID_CREDS; // Connection automatically returned to pool by releaser

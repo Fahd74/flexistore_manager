@@ -7,12 +7,20 @@ import '../../core/ffi_helpers.dart';
 // ── FFI Signatures ───────────────────────────────────────────────────────────
 
 // void log_inventory_change(int product_id, int user_id, const char* action_type, int qty_changed);
-typedef LogInventoryChangeC = Void Function(Int32 productId, Int32 userId, Pointer<Utf8> actionType, Int32 qtyChanged);
-typedef LogInventoryChangeDart = void Function(int productId, int userId, Pointer<Utf8> actionType, int qtyChanged);
+typedef LogInventoryChangeC =
+    Void Function(
+      Int32 productId,
+      Int32 userId,
+      Pointer<Utf8> actionType,
+      Int32 quantity_changed,
+    );
+typedef LogInventoryChangeDart =
+    void Function(int productId, int userId, Pointer<Utf8> actionType, int quantity_changed);
 
 // void log_transaction(int user_id, const char* action_type, double amount);
 typedef LogTransactionC = Void Function(Int32 userId, Pointer<Utf8> actionType, Double amount);
-typedef LogTransactionDart = void Function(int userId, Pointer<Utf8> actionType, double amount);
+typedef LogTransactionDart =
+    void Function(int userId, Pointer<Utf8> actionType, double amount);
 
 // const char* get_inventory_logs();
 typedef GetInventoryLogsC = Pointer<Utf8> Function();
@@ -43,12 +51,20 @@ class AuditNativeAPI {
     if (_isInitialized) return;
     try {
       final lib = NativeBridge().lib;
-      
-      _logInventoryChange = lib.lookupFunction<LogInventoryChangeC, LogInventoryChangeDart>('log_inventory_change');
-      _logTransaction = lib.lookupFunction<LogTransactionC, LogTransactionDart>('log_transaction');
-      _getInventoryLogs = lib.lookupFunction<GetInventoryLogsC, GetInventoryLogsDart>('get_inventory_logs');
-      _getTransactionLogs = lib.lookupFunction<GetTransactionLogsC, GetTransactionLogsDart>('get_transaction_logs');
-      
+
+      _logInventoryChange = lib.lookupFunction<LogInventoryChangeC, LogInventoryChangeDart>(
+        'log_inventory_change',
+      );
+      _logTransaction = lib.lookupFunction<LogTransactionC, LogTransactionDart>(
+        'log_transaction',
+      );
+      _getInventoryLogs = lib.lookupFunction<GetInventoryLogsC, GetInventoryLogsDart>(
+        'get_inventory_logs',
+      );
+      _getTransactionLogs = lib.lookupFunction<GetTransactionLogsC, GetTransactionLogsDart>(
+        'get_transaction_logs',
+      );
+
       _isInitialized = true;
     } catch (e) {
       print('Failed to bind audit FFI functions: $e');
@@ -57,20 +73,20 @@ class AuditNativeAPI {
   }
 
   /// Logs an inventory change safely via FFI.
-  void logInventoryChange(int productId, int userId, String actionType, int qtyChanged) {
+  void logInventoryChange(int productId, int userId, String actionType, int quantity_changed) {
     if (!_isInitialized) {
       print('Audit FFI not initialized.');
       return;
     }
 
-    // Convert Dart String to Pointer<Utf8> using malloc
-    final Pointer<Utf8> actionTypePtr = actionType.toNativeUtf8();
+    // Convert Dart String to Pointer<Utf8> using calloc helper
+    final Pointer<Utf8> actionTypePtr = toNativeUtf8(actionType);
 
     try {
-      _logInventoryChange(productId, userId, actionTypePtr, qtyChanged);
+      _logInventoryChange(productId, userId, actionTypePtr, quantity_changed);
     } finally {
       // Memory Safety: Free the allocated native string to prevent leaks
-      malloc.free(actionTypePtr);
+      calloc.free(actionTypePtr);
     }
   }
 
@@ -81,14 +97,14 @@ class AuditNativeAPI {
       return;
     }
 
-    // Convert Dart String to Pointer<Utf8> using malloc
-    final Pointer<Utf8> actionTypePtr = actionType.toNativeUtf8();
+    // Convert Dart String to Pointer<Utf8> using calloc helper
+    final Pointer<Utf8> actionTypePtr = toNativeUtf8(actionType);
 
     try {
       _logTransaction(userId, actionTypePtr, amount);
     } finally {
       // Memory Safety: Free the allocated native string to prevent leaks
-      malloc.free(actionTypePtr);
+      calloc.free(actionTypePtr);
     }
   }
 
@@ -97,7 +113,7 @@ class AuditNativeAPI {
     if (!_isInitialized) {
       return '[]';
     }
-    
+
     final Pointer<Utf8> ptr = _getInventoryLogs();
     // Use the helper to safely parse the string and free the C++ heap pointer
     return parseJsonAndFree(ptr);
@@ -108,7 +124,7 @@ class AuditNativeAPI {
     if (!_isInitialized) {
       return '[]';
     }
-    
+
     final Pointer<Utf8> ptr = _getTransactionLogs();
     // Use the helper to safely parse the string and free the C++ heap pointer
     return parseJsonAndFree(ptr);

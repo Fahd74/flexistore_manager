@@ -60,7 +60,7 @@ class _InventoryLogsScreenState extends State<InventoryLogsScreen> {
           int stockOut = 0;
 
           for (var log in logs) {
-            final int qty = (log['qty_changed'] is num) ? (log['qty_changed'] as num).toInt() : 0;
+            final int qty = (log['quantity_changed'] is num) ? (log['quantity_changed'] as num).toInt() : 0;
             if (qty > 0) {
               stockIn += qty;
             } else if (qty < 0) {
@@ -346,7 +346,7 @@ class _InventoryLogsScreenState extends State<InventoryLogsScreen> {
         final productId = log['product_id']?.toString() ?? '0';
         final date = log['created_at']?.toString() ?? 'N/A';
         final actionType = log['action_type']?.toString().toLowerCase() ?? '';
-        final qty = (log['qty_changed'] is num) ? (log['qty_changed'] as num).toInt() : 0;
+        final qty = (log['quantity_changed'] is num) ? (log['quantity_changed'] as num).toInt() : 0;
         final userId = log['user_id']?.toString() ?? 'N/A';
 
         // Derive UI values for placeholders

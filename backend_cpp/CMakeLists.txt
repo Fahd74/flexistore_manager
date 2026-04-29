@@ -21,7 +21,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # ── Locate MySQL Connector/C++ ────────────────────────────────────────────────
 # Note: MySQL package name changed from "MySQL" to "MySQLConnector" in newer FindMySQL.cmake
 # Try both package names to be robust
-find_package(MySQL REQUIRED)
+find_package(MySQL QUIET)
 if(NOT MySQL_FOUND)
     find_package(MySQLConnector REQUIRED)
 endif()

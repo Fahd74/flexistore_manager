@@ -1,3 +1,4 @@
+import 'package:flexistore_manager/audit/screens/audit_debug_screen.dart';
 import 'package:flexistore_manager/audit/screens/inventory_logs_screen.dart';
 import 'package:flexistore_manager/audit/screens/transaction_logs_screen.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'app_shell.dart';
 import '../auth/screens/login_screen.dart';
 import '../auth/data/auth_ffi.dart';
+import '../auth/data/session_ffi.dart';
 import '../dashboard/screens/dashboard_screen.dart';
 
 // ── Placeholder widgets for modules not yet implemented ──────────────────────
@@ -67,18 +69,15 @@ class AuditScreen extends StatelessWidget {
 
 final appRouter = GoRouter(
   initialLocation: '/login',
-  // ── Route Guard ──────────────────────────────────────────────────────────────
-  // TODO: Re-enable this guard once get_current_user_id() is exported via FFI
-  // and wired up in SessionNativeAPI. Currently disabled to avoid silent
-  // redirect loop (currentUserId was hardcoded -1 → always bouncing to /login).
-  // redirect: (context, state) {
-  //   final int currentUserId = SessionNativeAPI.instance.getCurrentUserId();
-  //   final bool isLoggedIn = currentUserId != -1;
-  //   final bool isLogin = state.matchedLocation == '/login';
-  //   if (isLoggedIn && isLogin) return '/dashboard';
-  //   if (!isLoggedIn && !isLogin) return '/login';
-  //   return null;
-  // },
+  // ── Route Guard ──────────────────────────────────────────────────────────────────
+  redirect: (context, state) {
+    final int currentUserId = SessionNativeAPI.instance.getCurrentUserId();
+    final bool isLoggedIn = currentUserId != -1;
+    final bool isLogin = state.matchedLocation == '/login';
+    if (isLoggedIn && isLogin) return '/dashboard';
+    if (!isLoggedIn && !isLogin) return '/login';
+    return null;
+  },
   routes: [
     GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
     // Logout route – clears session and redirects to login
@@ -91,7 +90,13 @@ final appRouter = GoRouter(
     ),
     ShellRoute(
       builder: (context, state, child) {
-        return AppShell(child: child);
+        final userName = SessionNativeAPI.instance.getCurrentUserName();
+        final userRole = SessionNativeAPI.instance.getCurrentRole();
+        return AppShell(
+          child: child,
+          userName: userName.isNotEmpty ? userName : 'User',
+          userRole: userRole.isNotEmpty ? userRole : 'Unknown',
+        );
       },
       routes: [
         GoRoute(path: '/dashboard', builder: (context, state) => const DashboardScreen()),
@@ -106,7 +111,7 @@ final appRouter = GoRouter(
           path: '/transactions',
           builder: (context, state) => const TransactionLogsScreen(),
         ),
-        GoRoute(path: '/returns', builder: (context, state) => const ReturnsScreen()),
+        GoRoute(path: '/returns', builder: (context, state) => const AuditDebugScreen()),
         GoRoute(path: '/audit', builder: (context, state) => const InventoryLogsScreen()),
       ],
     ),

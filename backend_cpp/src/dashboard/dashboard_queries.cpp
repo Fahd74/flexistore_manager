@@ -9,12 +9,20 @@
 #include <cmath>
 #include <chrono>
 
-#ifdef _WIN32
-    #define strdup _strdup
-#endif
 
 using namespace std;
 using namespace flexistore;
+
+// Helper: safely parse DECIMAL value fetched as CHAR to avoid
+// MySQL Connector heap corruption on Windows Debug builds.
+static double safe_decimal(sql::ResultSet* rs, const std::string& col) {
+    try {
+        std::string val = rs->getString(col);
+        return val.empty() ? 0.0 : std::stod(val);
+    } catch (...) {
+        return 0.0;
+    }
+}
 
 extern "C" {
 
@@ -32,7 +40,7 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
         auto conn = pool.getConnection();
 
         if (!conn) {
-            return strdup("{\"error\": \"Database connection failed\"}");
+            return allocate_ffi_string("{\"error\": \"Database connection failed\"}");
         }
 
         struct ConnectionReleaser {
@@ -53,8 +61,8 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
             unique_ptr<sql::Statement> stmt(releaser.c->createStatement());
             unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
                 "SELECT "
-                "  SUM(CASE WHEN DATE(created_at) = CURDATE() THEN net_amount ELSE 0 END) AS today_rev, "
-                "  SUM(CASE WHEN DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN net_amount ELSE 0 END) AS yest_rev, "
+                "  CAST(SUM(CASE WHEN DATE(created_at) = CURDATE() THEN net_amount ELSE 0 END) AS CHAR) AS today_rev, "
+                "  CAST(SUM(CASE WHEN DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN net_amount ELSE 0 END) AS CHAR) AS yest_rev, "
                 "  SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) AS today_sales, "
                 "  SUM(CASE WHEN DATE(created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY) THEN 1 ELSE 0 END) AS yest_sales "
                 "FROM invoices "
@@ -62,8 +70,8 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
             ));
 
             if (rs->next()) {
-                double today_rev = rs->getDouble("today_rev");
-                double yest_rev = rs->getDouble("yest_rev");
+                double today_rev = safe_decimal(rs.get(), "today_rev");
+                double yest_rev = safe_decimal(rs.get(), "yest_rev");
                 int today_sales = rs->getInt("today_sales");
                 int yest_sales = rs->getInt("yest_sales");
 
@@ -108,11 +116,11 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
         {
             unique_ptr<sql::Statement> stmt(releaser.c->createStatement());
             unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
-                "SELECT IFNULL(SUM(total_debt), 0) AS total_pending FROM clients"
+                "SELECT CAST(IFNULL(SUM(total_debt), 0) AS CHAR) AS total_pending FROM clients"
             ));
 
             if (rs->next()) {
-                builder.add_double("pending_payments", rs->getDouble("total_pending"));
+                builder.add_double("pending_payments", safe_decimal(rs.get(), "total_pending"));
                 builder.add_double("pending_growth", -5.3); // As requested
             } else {
                 builder.add_double("pending_payments", 0.0);
@@ -125,7 +133,8 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
             builder.start_array("revenue_chart");
             unique_ptr<sql::Statement> stmt(releaser.c->createStatement());
             unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
-                "SELECT DATE(created_at) as day_date, SUM(net_amount) as daily_revenue "
+                "SELECT CAST(DATE(created_at) AS CHAR) as day_date, "
+                "CAST(SUM(net_amount) AS CHAR) as daily_revenue "
                 "FROM invoices "
                 "WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) "
                 "GROUP BY DATE(created_at) "
@@ -135,7 +144,7 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
             while (rs->next()) {
                 builder.start_object();
                 builder.add_string("day", rs->getString("day_date"));
-                builder.add_double("amount", rs->getDouble("daily_revenue"));
+                builder.add_double("amount", safe_decimal(rs.get(), "daily_revenue"));
                 builder.end_object();
             }
             builder.end_array();
@@ -146,9 +155,10 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
             builder.start_array("recent_transactions");
             unique_ptr<sql::Statement> stmt(releaser.c->createStatement());
             unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
-                "SELECT i.id, IFNULL(c.name, 'Unknown Client') AS client_name, i.net_amount, "
+                "SELECT i.id, IFNULL(c.name, 'Unknown Client') AS client_name, "
+                "CAST(i.net_amount AS CHAR) AS net_amount, "
                 "(SELECT COUNT(*) FROM invoice_items ii WHERE ii.invoice_id = i.id) AS items_count, "
-                "i.created_at, i.payment_type "
+                "CAST(i.created_at AS CHAR) AS created_at, i.payment_type "
                 "FROM invoices i "
                 "LEFT JOIN clients c ON i.client_id = c.id "
                 "ORDER BY i.created_at DESC LIMIT 4"
@@ -158,7 +168,7 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
                 builder.start_object();
                 builder.add_int("id", rs->getInt("id"));
                 builder.add_string("client_name", rs->getString("client_name"));
-                builder.add_double("amount", rs->getDouble("net_amount"));
+                builder.add_double("amount", safe_decimal(rs.get(), "net_amount"));
                 builder.add_int("items_count", rs->getInt("items_count"));
                 builder.add_string("created_at", rs->getString("created_at"));
                 
@@ -211,12 +221,12 @@ FLEXISTORE_EXPORT const char* get_dashboard_stats(int user_id) {
 
     } catch (const sql::SQLException& e) {
         cerr << "[Dashboard] SQLException: " << e.what() << " (MySQL error code: " << e.getErrorCode() << ")" << endl;
-        return strdup("{\"error\": \"Database query failed\"}");
+        return allocate_ffi_string("{\"error\": \"Database query failed\"}");
     } catch (const std::exception& e) {
         cerr << "[Dashboard] std::exception: " << e.what() << endl;
-        return strdup("{\"error\": \"Unknown error occurred\"}");
+        return allocate_ffi_string("{\"error\": \"Unknown error occurred\"}");
     } catch (...) {
-        return strdup("{\"error\": \"Unknown error occurred\"}");
+        return allocate_ffi_string("{\"error\": \"Unknown error occurred\"}");
     }
 }
 

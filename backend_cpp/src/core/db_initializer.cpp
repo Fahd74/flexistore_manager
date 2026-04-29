@@ -218,7 +218,7 @@ FLEXISTORE_EXPORT int initialize_database() {
             cout << "[db_initializer] Table '" << TABLE_NAMES[i] << "' ensured." << endl;
         }
 
-        // ── Step 4: Seed a default admin user if users table is empty ────
+        // ── Step 4: Seed default users if users table is empty ────
         {
             unique_ptr<sql::Statement> stmt(guard.c->createStatement());
             unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
@@ -226,16 +226,14 @@ FLEXISTORE_EXPORT int initialize_database() {
             ));
 
             if (rs->next() && rs->getInt("cnt") == 0) {
-                unique_ptr<sql::PreparedStatement> pstmt(guard.c->prepareStatement(
-                    "INSERT INTO users (name, username, password_hash, role) "
-                    "VALUES (?, ?, ?, ?)"
-                ));
-                pstmt->setString(1, "Administrator");
-                pstmt->setString(2, "admin");
-                pstmt->setString(3, "admin123");
-                pstmt->setString(4, "admin");
-                pstmt->executeUpdate();
-                cout << "[db_initializer] Default admin user created (admin / admin123)." << endl;
+                unique_ptr<sql::Statement> insert_stmt(guard.c->createStatement());
+                insert_stmt->execute(
+                    "INSERT INTO users (name, username, password_hash, role) VALUES "
+                    "('System Admin', 'admin1', 'admin123', 'admin'), "
+                    "('Cashier One', 'cashier1', '123456', 'cashier'), "
+                    "('Inventory Manager', 'store_mng', 'store123', 'manager')"
+                );
+                cout << "[db_initializer] Default users seeded from SQL schema." << endl;
             }
         }
         cout << "[db_initializer] ✔ Database initialization complete." << endl;
