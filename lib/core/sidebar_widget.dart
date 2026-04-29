@@ -17,9 +17,17 @@ class _SidebarWidgetState extends State<SidebarWidget> {
     {'icon': Icons.people_outline, 'label': 'Clients', 'route': '/clients'},
     {'icon': Icons.calendar_today_outlined, 'label': 'Installments', 'route': '/installments'},
     {'icon': Icons.inventory_2_outlined, 'label': 'Inventory', 'route': '/inventory'},
-    {'icon': Icons.history_outlined, 'label': 'Transactions', 'route': '/transactions'},
+    {
+      'icon': Icons.bar_chart_outlined,
+      'label': 'Transactions History',
+      'route': '/transactions_history',
+    },
+    {
+      'icon': Icons.history_outlined,
+      'label': 'Inventory History',
+      'route': '/inventory_history',
+    },
     {'icon': Icons.keyboard_return_outlined, 'label': 'Returns', 'route': '/returns'},
-    {'icon': Icons.bar_chart_outlined, 'label': 'Audit', 'route': '/audit'},
   ];
 
   @override

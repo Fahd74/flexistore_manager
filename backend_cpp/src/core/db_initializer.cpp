@@ -236,6 +236,24 @@ FLEXISTORE_EXPORT int initialize_database() {
                 cout << "[db_initializer] Default users seeded from SQL schema." << endl;
             }
         }
+
+        // ── Step 5: Seed default products so Team 7 Audit tests pass FK constraint ────
+        {
+            unique_ptr<sql::Statement> stmt(guard.c->createStatement());
+            unique_ptr<sql::ResultSet> rs(stmt->executeQuery(
+                "SELECT COUNT(*) AS cnt FROM products"
+            ));
+
+            if (rs->next() && rs->getInt("cnt") == 0) {
+                unique_ptr<sql::Statement> insert_stmt(guard.c->createStatement());
+                insert_stmt->execute(
+                    "INSERT INTO products (id, barcode, name, purchase_price, selling_price, stock_quantity, status) VALUES "
+                    "(1, '1234567890123', 'Dummy Product', 10.00, 15.00, 100, 'active')"
+                );
+                cout << "[db_initializer] Dummy product seeded for FFI testing." << endl;
+            }
+        }
+
         cout << "[db_initializer] ✔ Database initialization complete." << endl;
         return FFI_SUCCESS;
     }

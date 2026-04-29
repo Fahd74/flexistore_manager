@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../data/audit_ffi.dart';
 
-class InventoryLogsScreen extends StatefulWidget {
-  const InventoryLogsScreen({super.key});
+class InventoryHistoryScreen extends StatefulWidget {
+  const InventoryHistoryScreen({super.key});
 
   @override
-  State<InventoryLogsScreen> createState() => _InventoryLogsScreenState();
+  State<InventoryHistoryScreen> createState() => _InventoryHistoryScreenState();
 }
 
-class _InventoryLogsScreenState extends State<InventoryLogsScreen> {
+class _InventoryHistoryScreenState extends State<InventoryHistoryScreen> {
   late Future<List<dynamic>> _logsFuture;
 
   @override

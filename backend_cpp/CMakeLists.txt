@@ -69,6 +69,13 @@ if(WIN32)
     target_compile_definitions(flexistore PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN _ITERATOR_DEBUG_LEVEL=0)
     # Enforce Release CRT (/MD) to avoid bad_alloc and ABI mismatches with MySQL Connector
     set_property(TARGET flexistore PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreadedDLL")
+
+    # CRITICAL: Flutter injects /MDd into global CMake flags for debug builds.
+    # We MUST scrub /MDd and replace it with /MD so MSVC doesn't pick /MDd over the property.
+    string(REPLACE "/MDd" "/MD" CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+    string(REPLACE "/MDd" "/MD" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+    string(REPLACE "/MDd" "/MD" CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
+    string(REPLACE "/MDd" "/MD" CMAKE_C_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO}")
 endif()
 
 # ── Output the DLL directly into a predictable location ───────────────────────

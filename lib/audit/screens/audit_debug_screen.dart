@@ -88,7 +88,7 @@ class _AuditDebugScreenState extends State<AuditDebugScreen> {
 
   void _logFakeInventoryRestock() {
     try {
-      AuditNativeAPI.instance.logInventoryChange(101, 1, "Restock", 50);
+      AuditNativeAPI.instance.logInventoryChange(1, 1, "Restock", 50);
       _showSnackBar('Logged: Inventory Restock (+50)');
       _refreshData();
     } catch (e) {
@@ -98,7 +98,7 @@ class _AuditDebugScreenState extends State<AuditDebugScreen> {
 
   void _logFakeInventorySale() {
     try {
-      AuditNativeAPI.instance.logInventoryChange(101, 1, "Sale", -1);
+      AuditNativeAPI.instance.logInventoryChange(1, 1, "Sale", -1);
       _showSnackBar('Logged: Inventory Sale (-1)');
       _refreshData();
     } catch (e) {

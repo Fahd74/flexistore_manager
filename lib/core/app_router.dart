@@ -1,6 +1,3 @@
-import 'package:flexistore_manager/audit/screens/audit_debug_screen.dart';
-import 'package:flexistore_manager/audit/screens/inventory_logs_screen.dart';
-import 'package:flexistore_manager/audit/screens/transaction_logs_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -9,6 +6,8 @@ import '../auth/screens/login_screen.dart';
 import '../auth/data/auth_ffi.dart';
 import '../auth/data/session_ffi.dart';
 import '../dashboard/screens/dashboard_screen.dart';
+import '../audit/screens/transactions_history_screen.dart';
+import '../audit/screens/inventory_history_screen.dart';
 
 // ── Placeholder widgets for modules not yet implemented ──────────────────────
 class PosScreen extends StatelessWidget {
@@ -43,27 +42,11 @@ class InventoryScreen extends StatelessWidget {
   );
 }
 
-class TransactionsScreen extends StatelessWidget {
-  const TransactionsScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('Transactions Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
-
 class ReturnsScreen extends StatelessWidget {
   const ReturnsScreen({super.key});
   @override
   Widget build(BuildContext context) => const Center(
     child: Text('Returns Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
-
-class AuditScreen extends StatelessWidget {
-  const AuditScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('Audit Module', style: TextStyle(color: Colors.white, fontSize: 24)),
   );
 }
 
@@ -108,11 +91,14 @@ final appRouter = GoRouter(
         ),
         GoRoute(path: '/inventory', builder: (context, state) => const InventoryScreen()),
         GoRoute(
-          path: '/transactions',
-          builder: (context, state) => const TransactionLogsScreen(),
+          path: '/transactions_history',
+          builder: (context, state) => const TransactionsHistoryScreen(),
         ),
-        GoRoute(path: '/returns', builder: (context, state) => const AuditDebugScreen()),
-        GoRoute(path: '/audit', builder: (context, state) => const InventoryLogsScreen()),
+        GoRoute(
+          path: '/inventory_history',
+          builder: (context, state) => const InventoryHistoryScreen(),
+        ),
+        GoRoute(path: '/returns', builder: (context, state) => const ReturnsScreen()),
       ],
     ),
   ],

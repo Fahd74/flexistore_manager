@@ -2,14 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../data/audit_ffi.dart';
 
-class TransactionLogsScreen extends StatefulWidget {
-  const TransactionLogsScreen({super.key});
+class TransactionsHistoryScreen extends StatefulWidget {
+  const TransactionsHistoryScreen({super.key});
 
   @override
-  State<TransactionLogsScreen> createState() => _TransactionLogsScreenState();
+  State<TransactionsHistoryScreen> createState() => _TransactionsHistoryScreenState();
 }
 
-class _TransactionLogsScreenState extends State<TransactionLogsScreen> {
+class _TransactionsHistoryScreenState extends State<TransactionsHistoryScreen> {
   late Future<List<dynamic>> _transactionsFuture;
 
   @override
