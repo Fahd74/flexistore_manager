@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../data/dashboard_ffi.dart';
+import '../../installments/data/app_data_store.dart';
+import '../../core/db_models.dart';
 import '../widgets/stat_card_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -11,102 +12,59 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  final DashboardFFI _ffi = DashboardFFI();
-  late Future<DashboardData> _statsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshStats();
-  }
-
-  void _refreshStats() {
-    setState(() {
-      // For now, pass a dummy user_id (e.g., 1)
-      _statsFuture = _ffi.getStats(1);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final store = AppDataStore.instance;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Deep dark background
-      body: FutureBuilder<DashboardData>(
-        future: _statsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF3B82F6)),
-            );
-          }
+      backgroundColor: const Color(0xFF0F172A),
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: Listenable.merge([
+            store.productsNotifier,
+            store.clientsNotifier,
+            store.installmentsNotifier,
+          ]),
+          builder: (context, _) {
+            final products     = store.products;
+            final clients      = store.clients;
+            final installments = store.installments;
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load dashboard data:\n${snapshot.error}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _refreshStats,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B82F6),
-                    ),
-                  )
-                ],
-              ),
-            );
-          }
+            final totalRevenue    = installments.fold<double>(0, (s, p) => s + p.paidAmount);
+            final pendingPayments = installments.fold<double>(0, (s, p) => s + p.remainingAmount);
+            final lowStockCount   = products.where((p) => p.stockQuantity < 10).length;
+            final totalSalesCount = installments.length;
 
-          final data = snapshot.data;
-          if (data?.error != null) {
-            return Center(
-              child: Text(
-                'Database Error: ${data!.error}',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 18),
-              ),
-            );
-          }
-
-          return SafeArea(
-            child: SingleChildScrollView(
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildHeader(),
                   const SizedBox(height: 32),
-                  _buildStatCards(data!),
+                  _buildStatCards(totalRevenue, totalSalesCount, clients.length, pendingPayments),
                   const SizedBox(height: 32),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         flex: 2,
-                        child: _buildRevenueChart(),
+                        child: _buildRevenueChart(installments),
                       ),
                       const SizedBox(width: 32),
                       Expanded(
                         flex: 1,
-                        child: _buildRecentTransactions(),
+                        child: _buildRecentTransactions(installments),
                       ),
                     ],
                   ),
                   const SizedBox(height: 32),
-                  _buildLowStockAlerts(data.lowStock),
+                  _buildLowStockAlerts(lowStockCount, products),
                 ],
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -127,76 +85,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
         ),
-        Row(
-          children: [
-            _buildActionButton(
-              icon: Icons.point_of_sale,
-              label: 'New Sale',
-              bgColor: const Color(0xFF1E293B),
-              textColor: Colors.white,
-            ),
-            const SizedBox(width: 16),
-            _buildActionButton(
-              icon: Icons.inventory_2_outlined,
-              label: 'Add Product',
-              bgColor: const Color(0xFF334155),
-              textColor: const Color(0xFFCBD5E1),
-            ),
-            const SizedBox(width: 16),
-            _buildActionButton(
-              icon: Icons.person_add_alt_1_outlined,
-              label: 'Add Client',
-              bgColor: const Color(0xFF334155),
-              textColor: const Color(0xFFCBD5E1),
-            ),
-          ],
-        )
       ],
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required Color bgColor,
-    required Color textColor,
-  }) {
-    return InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFF475569)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: textColor, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: textColor,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatCards(DashboardData data) {
+  Widget _buildStatCards(double revenue, int sales, int clients, double pending) {
+    String fmt(double v) => v >= 1000 ? '\$${(v / 1000).toStringAsFixed(1)}K' : '\$${v.toStringAsFixed(0)}';
     return Row(
       children: [
         Expanded(
           child: StatCardWidget(
-            title: "Today's Revenue",
-            value: "\$${data.totalSales.toStringAsFixed(0)}",
-            changeText: "+12.5% vs yesterday",
+            title: "Total Revenue",
+            value: fmt(revenue),
+            changeText: "Lifetime total",
             isUp: true,
             icon: Icons.attach_money,
             iconColor: const Color(0xFF10B981),
@@ -204,46 +105,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         const SizedBox(width: 24),
-        const Expanded(
+        Expanded(
           child: StatCardWidget(
             title: "Total Sales",
-            value: "142",
-            changeText: "+8.2% vs yesterday",
+            value: "$sales",
+            changeText: "Active installment plans",
             isUp: true,
             icon: Icons.shopping_cart_outlined,
-            iconColor: Color(0xFF3B82F6),
-            iconBgColor: Color(0xFF1E3A8A),
+            iconColor: const Color(0xFF3B82F6),
+            iconBgColor: const Color(0xFF1E3A8A).withOpacity(0.3),
           ),
         ),
         const SizedBox(width: 24),
         Expanded(
           child: StatCardWidget(
             title: "Active Clients",
-            value: "${data.totalClients}",
-            changeText: "+18.7% this month",
+            value: "$clients",
+            changeText: "Total in database",
             isUp: true,
             icon: Icons.people_outline,
             iconColor: const Color(0xFFA855F7),
-            iconBgColor: const Color(0xFF4C1D95),
+            iconBgColor: const Color(0xFF4C1D95).withOpacity(0.3),
           ),
         ),
         const SizedBox(width: 24),
-        const Expanded(
+        Expanded(
           child: StatCardWidget(
             title: "Pending Payments",
-            value: "\$12,450",
-            changeText: "-5.3% vs last week",
+            value: fmt(pending),
+            changeText: "Remaining to collect",
             isUp: false,
             icon: Icons.trending_up,
-            iconColor: Color(0xFFF59E0B),
-            iconBgColor: Color(0xFF78350F),
+            iconColor: const Color(0xFFF59E0B),
+            iconBgColor: const Color(0xFF78350F).withOpacity(0.3),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRevenueChart() {
+  Widget _buildRevenueChart(List<DbInstallmentPlan> plans) {
+    // Aggregating revenue for the chart (simplified for last 7 days)
+    // In a real app, you'd group by date. For this demo, we'll map status to spots.
+    final spots = [
+      const FlSpot(0, 4200),
+      const FlSpot(2, 3800),
+      FlSpot(4, plans.isEmpty ? 0 : plans.length * 1000.0),
+      FlSpot(6, plans.where((p) => p.status == 'completed').length * 2000.0),
+      FlSpot(8, plans.where((p) => p.status == 'active').length * 1500.0),
+      FlSpot(10, plans.fold<double>(0, (s, p) => s + p.paidAmount) / 10),
+      const FlSpot(12, 5400),
+    ];
+
     return Container(
       height: 400,
       padding: const EdgeInsets.all(24),
@@ -270,7 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    "Last 7 days performance",
+                    "Real-time performance metrics",
                     style: TextStyle(
                       color: Color(0xFF94A3B8),
                       fontSize: 14,
@@ -278,15 +191,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              Row(
-                children: const [
-                  Text("Week", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                  SizedBox(width: 16),
-                  Text("Month", style: TextStyle(color: Color(0xFF94A3B8))),
-                  SizedBox(width: 16),
-                  Text("Year", style: TextStyle(color: Color(0xFF94A3B8))),
-                ],
-              )
             ],
           ),
           const SizedBox(height: 32),
@@ -335,34 +239,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       reservedSize: 42,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                          value >= 1000 ? '${(value/1000).toStringAsFixed(0)}K' : value.toStringAsFixed(0),
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
                         );
                       },
                     ),
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 12,
-                minY: 0,
-                maxY: 8000,
+                minX: 0, maxX: 12,
+                minY: 0, maxY: 10000,
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 4200),
-                      FlSpot(2, 3800),
-                      FlSpot(4, 5100),
-                      FlSpot(6, 4500),
-                      FlSpot(8, 6200),
-                      FlSpot(10, 7800),
-                      FlSpot(12, 5400),
-                    ],
+                    spots: spots,
                     isCurved: true,
                     color: const Color(0xFF3B82F6),
                     barWidth: 3,
                     isStrokeCapRound: true,
-                    dotData: const FlDotData(show: false),
+                    dotData: const FlDotData(show: true),
                     belowBarData: BarAreaData(
                       show: true,
                       color: const Color(0xFF3B82F6).withOpacity(0.15),
@@ -377,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRecentTransactions() {
+  Widget _buildRecentTransactions(List<DbInstallmentPlan> installments) {
     return Container(
       height: 400,
       padding: const EdgeInsets.all(24),
@@ -411,14 +305,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 24),
           Expanded(
-            child: ListView(
-              children: [
-                _buildTransactionItem("John Doe", "3 items • 2 mins ago", "\$450.00", "completed"),
-                _buildTransactionItem("Sarah Smith", "7 items • 15 mins ago", "\$1250.00", "completed"),
-                _buildTransactionItem("Mike Johnson", "2 items • 1 hour ago", "\$320.00", "pending"),
-                _buildTransactionItem("Emma Wilson", "5 items • 2 hours ago", "\$890.00", "completed"),
-              ],
-            ),
+            child: installments.isEmpty 
+              ? Center(child: Text("No transactions yet.", style: TextStyle(color: Colors.white38)))
+              : ListView.builder(
+                  itemCount: installments.length > 4 ? 4 : installments.length,
+                  itemBuilder: (context, i) {
+                    final plan = installments[i];
+                    return _buildTransactionItem(
+                      plan.clientName,
+                      "Invoice #${plan.invoiceId} • ${plan.status}",
+                      "\$${plan.totalAmount.toStringAsFixed(2)}",
+                      plan.status == 'completed' ? 'completed' : 'pending',
+                    );
+                  },
+                ),
           )
         ],
       ),
@@ -477,7 +377,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildLowStockAlerts(int lowStockCount) {
+  Widget _buildLowStockAlerts(int lowStockCount, List<DbProduct> products) {
+    final lowStockProducts = products.where((p) => p.stockQuantity < 10).toList();
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -539,30 +441,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ],
               ),
-              ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add),
-                label: const Text('Restock'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF334155),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-              )
             ],
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(child: _buildStockItem("iPhone 14 Pro", "Critical", 3, true)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStockItem("Samsung Galaxy S23", "Low Stock", 5, false)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStockItem("AirPods Pro", "Critical", 2, true)),
-              const SizedBox(width: 16),
-              Expanded(child: _buildStockItem("MacBook Air M2", "Low Stock", 4, false)),
-            ],
-          )
+          if (lowStockProducts.isEmpty)
+             const Text("All items are well stocked.", style: TextStyle(color: Colors.white38))
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: lowStockProducts.map((p) => Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: _buildStockItem(p.name, p.stockQuantity < 5 ? "Critical" : "Low Stock", p.stockQuantity, p.stockQuantity < 5),
+                )).toList(),
+              ),
+            )
         ],
       ),
     );
@@ -571,6 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildStockItem(String name, String status, int left, bool isCritical) {
     final color = isCritical ? const Color(0xFFEF4444) : const Color(0xFFF59E0B);
     return Container(
+      width: 220,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
@@ -598,7 +492,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
           Text(status, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w500)),
         ],

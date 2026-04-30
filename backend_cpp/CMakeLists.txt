@@ -57,6 +57,7 @@ target_compile_definitions(flexistore PRIVATE FLEXISTORE_EXPORTS)
 target_include_directories(flexistore
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src          # allows includes like "core/db_config.h"
+        ${CMAKE_CURRENT_SOURCE_DIR}/include      # Mock boost headers
         ${MYSQL_INCLUDE_DIRS}            # MySQL Connector headers
         ${MYSQL_INCLUDE_DIRS}/jdbc       # For MySQL Connector 9.x JDBC compatibility
 )

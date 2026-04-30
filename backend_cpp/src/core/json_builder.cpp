@@ -1,5 +1,9 @@
 #include "json_builder.h"
-#include <mysql/jdbc.h>
+#include <mysql_driver.h>
+#include <mysql_connection.h>
+#include <cppconn/resultset.h>
+#include <cppconn/datatype.h>
+#include <cppconn/resultset_metadata.h>
 #include <iomanip>
 #include <cstring>
 #include <cstdlib>

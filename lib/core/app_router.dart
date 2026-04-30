@@ -6,15 +6,9 @@ import '../auth/screens/login_screen.dart';
 import '../auth/data/auth_ffi.dart';
 import '../dashboard/screens/dashboard_screen.dart';
 import '../installments/screens/installments_screen.dart';
+import '../pos/screens/pos_screen.dart';
 
 // ── Placeholder widgets for modules not yet implemented ──────────────────────
-class PosScreen extends StatelessWidget {
-  const PosScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('POS Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
 
 class ClientsScreen extends StatelessWidget {
   const ClientsScreen({super.key});

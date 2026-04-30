@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'core/app_router.dart';
 import 'core/native_bridge.dart';
+import 'installments/data/app_data_store.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     NativeBridge().initialize();
-    int dbStatus = NativeBridge().initializeDatabase();
+    final dbStatus = NativeBridge().initializeDatabase();
     print('Database Initialization Status: $dbStatus');
+    // Populate with mock data for testing/demo
+    AppDataStore.instance.applyMockData();
   } catch (e) {
     print('Error initializing native bridge: $e');
   }
-  
+
   runApp(const MyApp());
 }
 

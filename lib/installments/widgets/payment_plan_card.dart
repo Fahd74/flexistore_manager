@@ -9,10 +9,10 @@ class PaymentPlanCard extends StatelessWidget {
   final double paidAmount;
   final double remainingAmount;
   final double monthlyAmount;
-  final String nextPaymentDate;
   final double interestRate;
+  final String nextPaymentDate;
   final VoidCallback onViewDetails;
-  final VoidCallback onRecordPayment;
+  final VoidCallback? onRecordPayment;
 
   const PaymentPlanCard({
     Key? key,
@@ -24,8 +24,8 @@ class PaymentPlanCard extends StatelessWidget {
     required this.paidAmount,
     required this.remainingAmount,
     required this.monthlyAmount,
-    required this.nextPaymentDate,
     required this.interestRate,
+    required this.nextPaymentDate,
     required this.onViewDetails,
     required this.onRecordPayment,
   }) : super(key: key);
@@ -33,8 +33,12 @@ class PaymentPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isActive = status.toLowerCase() == 'active';
-    final Color statusColor = isActive ? const Color(0xFF3B82F6) : const Color(0xFFEF4444);
-    final String initial = clientName.isNotEmpty ? clientName[0].toUpperCase() : '?';
+    final Color statusColor = isActive
+        ? const Color(0xFF3B82F6)
+        : const Color(0xFFEF4444);
+    final String initial = clientName.isNotEmpty
+        ? clientName[0].toUpperCase()
+        : '?';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -89,7 +93,10 @@ class PaymentPlanCard extends StatelessWidget {
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
@@ -98,7 +105,9 @@ class PaymentPlanCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      isActive ? Icons.check_circle_outline : Icons.error_outline,
+                      isActive
+                          ? Icons.check_circle_outline
+                          : Icons.error_outline,
                       color: statusColor,
                       size: 14,
                     ),
@@ -150,10 +159,26 @@ class PaymentPlanCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildAmountColumn("Total Amount", "\$${totalAmount.toStringAsFixed(0)}", Colors.white),
-              _buildAmountColumn("Paid", "\$${paidAmount.toStringAsFixed(0)}", const Color(0xFF10B981)),
-              _buildAmountColumn("Remaining", "\$${remainingAmount.toStringAsFixed(0)}", const Color(0xFFF59E0B)),
-              _buildAmountColumn("Monthly", "\$${monthlyAmount.toStringAsFixed(0)}", const Color(0xFF3B82F6)),
+              _buildAmountColumn(
+                "Total Amount",
+                "\$${totalAmount.toStringAsFixed(0)}",
+                Colors.white,
+              ),
+              _buildAmountColumn(
+                "Paid",
+                "\$${paidAmount.toStringAsFixed(0)}",
+                const Color(0xFF10B981),
+              ),
+              _buildAmountColumn(
+                "Remaining",
+                "\$${remainingAmount.toStringAsFixed(0)}",
+                const Color(0xFFF59E0B),
+              ),
+              _buildAmountColumn(
+                "Monthly",
+                "\$${monthlyAmount.toStringAsFixed(0)}",
+                const Color(0xFF3B82F6),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -187,7 +212,7 @@ class PaymentPlanCard extends StatelessWidget {
                   TextButton(
                     onPressed: onViewDetails,
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.white,
+                      foregroundColor: Colors.white70,
                     ),
                     child: const Text("View Details"),
                   ),
@@ -195,22 +220,26 @@ class PaymentPlanCard extends StatelessWidget {
                   ElevatedButton(
                     onPressed: onRecordPayment,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
+                      backgroundColor: const Color(0xFF22C55E),
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                     ),
-                    child: const Text("Record Payment"),
+                    child: const Text(
+                      "Record Payment",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 20),
-
-          // Footer
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -221,20 +250,23 @@ class PaymentPlanCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.trending_up, color: Color(0xFF3B82F6), size: 16),
-                    SizedBox(width: 8),
-                    Text(
+                  children: [
+                    Icon(
+                      Icons.trending_up,
+                      color: Colors.blue.shade400,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
                       "Interest Rate",
                       style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
                     ),
                   ],
                 ),
-                Text(
-                  "${interestRate.toStringAsFixed(0)}%",
-                  style: const TextStyle(
+                const Text(
+                  "5%",
+                  style: TextStyle(
                     color: Colors.white,
-                    fontSize: 14,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

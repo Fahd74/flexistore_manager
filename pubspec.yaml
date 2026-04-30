@@ -39,6 +39,8 @@ dependencies:
   go_router: ^17.2.2
   crypto: ^3.0.7
   fl_chart: ^1.2.0
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
 
 dev_dependencies:
   flutter_test:
