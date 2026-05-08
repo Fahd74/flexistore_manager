@@ -66,6 +66,7 @@ static const char* SQL_CREATE_PRODUCTS =
     "  id              INT AUTO_INCREMENT PRIMARY KEY,"
     "  barcode         VARCHAR(50)   NOT NULL UNIQUE,"
     "  name            VARCHAR(150)  NOT NULL,"
+    "  category        VARCHAR(100)  NOT NULL DEFAULT 'General',"
     "  purchase_price  DECIMAL(10,2) NOT NULL DEFAULT 0.00,"
     "  selling_price   DECIMAL(10,2) NOT NULL DEFAULT 0.00,"
     "  stock_quantity  INT           NOT NULL DEFAULT 0,"
@@ -221,6 +222,18 @@ FLEXISTORE_EXPORT int initialize_database() {
             cout << "[db_initializer] Table '" << TABLE_NAMES[i] << "' ensured." << endl;
         }
 
+        // ── Step 3.1: Run schema migrations (e.g., missing category column) ──
+        try {
+            unique_ptr<sql::Statement> alter_stmt(guard.c->createStatement());
+            alter_stmt->execute("ALTER TABLE products ADD COLUMN category VARCHAR(100) NOT NULL DEFAULT 'General' AFTER name");
+            cout << "[db_initializer] Migration: Added 'category' column to products table." << endl;
+        } catch (sql::SQLException& e) {
+            // 1060 = Duplicate column name (already exists)
+            if (e.getErrorCode() != 1060) {
+                cout << "[db_initializer] Warning on ALTER TABLE products: " << e.what() << endl;
+            }
+        }
+
         // ── Step 4: Seed default users if users table is empty ────
         {
             unique_ptr<sql::Statement> stmt(guard.c->createStatement());
@@ -250,8 +263,8 @@ FLEXISTORE_EXPORT int initialize_database() {
             if (rs->next() && rs->getInt("cnt") == 0) {
                 unique_ptr<sql::Statement> insert_stmt(guard.c->createStatement());
                 insert_stmt->execute(
-                    "INSERT INTO products (id, barcode, name, purchase_price, selling_price, stock_quantity, status) VALUES "
-                    "(1, '1234567890123', 'Dummy Product', 10.00, 15.00, 100, 'active')"
+                    "INSERT INTO products (id, barcode, name, category, purchase_price, selling_price, stock_quantity, status) VALUES "
+                    "(1, '1234567890123', 'Dummy Product', 'General', 10.00, 15.00, 100, 'active')"
                 );
                 cout << "[db_initializer] Dummy product seeded for FFI testing." << endl;
             }

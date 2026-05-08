@@ -67,6 +67,9 @@ constexpr int FFI_ERROR_INV_PRODUCT_EXISTS    = -200; // Barcode already exists
 constexpr int FFI_ERROR_INV_INVALID_PRICE     = -201; // Negative or zero price
 constexpr int FFI_ERROR_INV_INVALID_QUANTITY  = -202; // Negative stock quantity
 constexpr int FFI_ERROR_INV_PRODUCT_INACTIVE  = -203; // Attempting op on soft-deleted product
+constexpr int FFI_ERROR_INV_DUPLICATE_BARCODE = -204; // Barcode already exists (duplicate check)
+constexpr int FFI_ERROR_INV_PRODUCT_NOT_FOUND = -205; // Product ID does not exist or is inactive
+constexpr int FFI_ERROR_INV_INSUFFICIENT_STOCK= -206; // Stock would go negative after operation
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CLIENTS CODES (-300 to -399)   — Team 3

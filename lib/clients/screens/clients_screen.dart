@@ -123,8 +123,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
     setState(() {
       _filteredClients = _allClients.where((client) {
         final matchesSearch = client.name.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-                             client.email.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                             client.phone.contains(_searchQuery);
+                            client.email.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                            client.phone.contains(_searchQuery);
         final matchesStatus = _selectedFilter == "All" || client.status == _selectedFilter;
         return matchesSearch && matchesStatus;
       }).toList();

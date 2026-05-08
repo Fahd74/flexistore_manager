@@ -1,5 +1,6 @@
 import 'package:flexistore_manager/audit/screens/audit_debug_screen.dart';
 import 'package:flexistore_manager/clients/screens/clients_screen.dart';
+import 'package:flexistore_manager/inventory/screens/inventory_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -36,13 +37,7 @@ class InstallmentsScreen extends StatelessWidget {
   );
 }
 
-class InventoryScreen extends StatelessWidget {
-  const InventoryScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('Inventory Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
+
 
 class ReturnsScreen extends StatelessWidget {
   const ReturnsScreen({super.key});
