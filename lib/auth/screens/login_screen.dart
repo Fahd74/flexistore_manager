@@ -295,12 +295,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       SizedBox(height: 8),
                       Text(
-                        'Admin: admin1 / admin123',
+                        'Admin: admin / admin123',
                         style: TextStyle(color: Color(0xFF60A5FA), fontSize: 13),
                       ),
                       SizedBox(height: 4),
                       Text(
-                        'Cashier: cashier1 / 123456',
+                        'Cashier: cashier / 123456',
                         style: TextStyle(color: Color(0xFF60A5FA), fontSize: 13),
                       ),
                       SizedBox(height: 4),

@@ -1,3 +1,5 @@
+import 'package:flexistore_manager/audit/screens/audit_debug_screen.dart';
+import 'package:flexistore_manager/clients/screens/clients_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,13 +20,13 @@ class PosScreen extends StatelessWidget {
   );
 }
 
-class ClientsScreen extends StatelessWidget {
-  const ClientsScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('Clients Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
+// class ClientsScreen extends StatelessWidget {
+//   const ClientsScreen({super.key});
+//   @override
+//   Widget build(BuildContext context) => const Center(
+//     child: Text('Clients Module', style: TextStyle(color: Colors.white, fontSize: 24)),
+//   );
+// }
 
 class InstallmentsScreen extends StatelessWidget {
   const InstallmentsScreen({super.key});
@@ -98,7 +100,7 @@ final appRouter = GoRouter(
           path: '/inventory_history',
           builder: (context, state) => const InventoryHistoryScreen(),
         ),
-        GoRoute(path: '/returns', builder: (context, state) => const ReturnsScreen()),
+        GoRoute(path: '/returns', builder: (context, state) => const AuditDebugScreen()),
       ],
     ),
   ],

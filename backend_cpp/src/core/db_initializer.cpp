@@ -52,6 +52,9 @@ static const char* SQL_CREATE_CLIENTS =
     "  id             INT AUTO_INCREMENT PRIMARY KEY,"
     "  name           VARCHAR(100)  NOT NULL,"
     "  phone          VARCHAR(20)   NOT NULL UNIQUE,"
+    "  email          VARCHAR(100)  DEFAULT NULL,"
+    "  address        VARCHAR(255)  DEFAULT NULL,"
+    "  notes          TEXT          DEFAULT NULL,"
     "  total_debt     DECIMAL(12,2) NOT NULL DEFAULT 0.00,"
     "  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
     "  updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
@@ -229,8 +232,8 @@ FLEXISTORE_EXPORT int initialize_database() {
                 unique_ptr<sql::Statement> insert_stmt(guard.c->createStatement());
                 insert_stmt->execute(
                     "INSERT INTO users (name, username, password_hash, role) VALUES "
-                    "('System Admin', 'admin1', 'admin123', 'admin'), "
-                    "('Cashier One', 'cashier1', '123456', 'cashier'), "
+                    "('System Admin', 'admin', 'admin123', 'admin'), "
+                    "('Cashier One', 'cashier', '123456', 'cashier'), "
                     "('Inventory Manager', 'store_mng', 'store123', 'manager')"
                 );
                 cout << "[db_initializer] Default users seeded from SQL schema." << endl;
