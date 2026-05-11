@@ -1,6 +1,7 @@
 import 'package:flexistore_manager/audit/screens/audit_debug_screen.dart';
 import 'package:flexistore_manager/clients/screens/clients_screen.dart';
 import 'package:flexistore_manager/inventory/screens/inventory_screen.dart';
+import 'package:flexistore_manager/pos/screens/pos_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -12,23 +13,6 @@ import '../dashboard/screens/dashboard_screen.dart';
 import '../audit/screens/transactions_history_screen.dart';
 import '../audit/screens/inventory_history_screen.dart';
 
-// ── Placeholder widgets for modules not yet implemented ──────────────────────
-class PosScreen extends StatelessWidget {
-  const PosScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('POS Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
-
-// class ClientsScreen extends StatelessWidget {
-//   const ClientsScreen({super.key});
-//   @override
-//   Widget build(BuildContext context) => const Center(
-//     child: Text('Clients Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-//   );
-// }
-
 class InstallmentsScreen extends StatelessWidget {
   const InstallmentsScreen({super.key});
   @override
@@ -36,8 +20,6 @@ class InstallmentsScreen extends StatelessWidget {
     child: Text('Installments Module', style: TextStyle(color: Colors.white, fontSize: 24)),
   );
 }
-
-
 
 class ReturnsScreen extends StatelessWidget {
   const ReturnsScreen({super.key});

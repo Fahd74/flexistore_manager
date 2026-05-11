@@ -3,8 +3,13 @@
 
 #include "../core/ffi_types.h"
 
+// Forward declaration
+namespace sql {
+    class Connection;
+}
+
 extern "C" {
-    FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const char* action_type, int qty_changed);
+    FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const char* action_type, int qty_changed, sql::Connection* conn = nullptr);
     FLEXISTORE_EXPORT void log_transaction(int user_id, const char* action_type, double amount);
     FLEXISTORE_EXPORT const char* get_inventory_logs();
     FLEXISTORE_EXPORT const char* get_transaction_logs();

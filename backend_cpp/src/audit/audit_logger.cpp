@@ -19,19 +19,30 @@ namespace {
 
 extern "C" {
 
-FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const char* action_type, int quantity_changed) {
+FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const char* action_type, int quantity_changed, sql::Connection* conn) {
     std::lock_guard<std::mutex> lock(audit_mutex);
-    try {
-        if (!action_type) return;
-
+    
+    bool own_conn = false;
+    std::unique_ptr<sql::Connection> local_conn_ptr;
+    
+    if (!conn) {
         auto& pool = flexistore::DBConnectionPool::getInstance();
-        ConnGuard guard{pool, pool.getConnection()};
-        if (!guard.c) {
+        local_conn_ptr = pool.getConnection();
+        if (!local_conn_ptr) {
             std::cerr << "[Audit] Error: Failed to acquire DB connection for inventory log." << std::endl;
             return;
         }
+        conn = local_conn_ptr.get();
+        own_conn = true;
+    }
 
-        std::unique_ptr<sql::PreparedStatement> pstmt(guard.c->prepareStatement(
+    try {
+        if (!action_type) {
+            if (own_conn) flexistore::DBConnectionPool::getInstance().releaseConnection(std::move(local_conn_ptr));
+            return;
+        }
+
+        std::unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(
             "INSERT INTO inventory_logs (product_id, user_id, action_type, quantity_changed) "
             "VALUES (?, ?, ?, ?)"
         ));
@@ -43,10 +54,14 @@ FLEXISTORE_EXPORT void log_inventory_change(int product_id, int user_id, const c
 
         pstmt->executeUpdate();
 
+        if (own_conn) flexistore::DBConnectionPool::getInstance().releaseConnection(std::move(local_conn_ptr));
+
     } catch (const sql::SQLException& e) {
         std::cerr << "[Audit] SQLException in log_inventory_change: " << e.what() << std::endl;
+        if (own_conn) flexistore::DBConnectionPool::getInstance().releaseConnection(std::move(local_conn_ptr));
     } catch (const std::exception& e) {
         std::cerr << "[Audit] Exception in log_inventory_change: " << e.what() << std::endl;
+        if (own_conn) flexistore::DBConnectionPool::getInstance().releaseConnection(std::move(local_conn_ptr));
     }
 }
 

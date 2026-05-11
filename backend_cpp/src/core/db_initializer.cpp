@@ -234,6 +234,17 @@ FLEXISTORE_EXPORT int initialize_database() {
             }
         }
 
+        // ── Step 3.2: Run schema migration for return tracking ───────────
+        try {
+            unique_ptr<sql::Statement> alter_stmt(guard.c->createStatement());
+            alter_stmt->execute("ALTER TABLE invoices ADD COLUMN return_of_invoice_id INT DEFAULT NULL AFTER payment_type");
+            cout << "[db_initializer] Migration: Added 'return_of_invoice_id' column to invoices table." << endl;
+        } catch (sql::SQLException& e) {
+            if (e.getErrorCode() != 1060) {
+                cout << "[db_initializer] Warning on ALTER TABLE invoices: " << e.what() << endl;
+            }
+        }
+
         // ── Step 4: Seed default users if users table is empty ────
         {
             unique_ptr<sql::Statement> stmt(guard.c->createStatement());

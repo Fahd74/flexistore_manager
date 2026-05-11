@@ -9,7 +9,7 @@ class SidebarWidget extends StatefulWidget {
 }
 
 class _SidebarWidgetState extends State<SidebarWidget> {
-  bool isExpanded = true;
+  bool isExpanded = false;
 
   final List<Map<String, dynamic>> menuItems = [
     {'icon': Icons.dashboard_outlined, 'label': 'Dashboard', 'route': '/dashboard'},
