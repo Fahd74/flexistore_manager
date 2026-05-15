@@ -36,7 +36,21 @@ extern "C" {
         int client_id,
         int invoice_id,
         double total_amount,
-        int months
+        int months,
+        int product_id
+    );
+
+    FLEXISTORE_EXPORT const char* get_all_installments(int user_id);
+
+    FLEXISTORE_EXPORT int record_installment_payment(
+        int user_id,
+        int installment_id,
+        double amount_paid
+    );
+
+    FLEXISTORE_EXPORT int cancel_installment_plan(
+        int user_id,
+        int installment_id
     );
 }
 

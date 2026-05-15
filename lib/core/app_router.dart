@@ -1,8 +1,8 @@
-import 'package:flexistore_manager/audit/screens/audit_debug_screen.dart';
 import 'package:flexistore_manager/clients/screens/clients_screen.dart';
+import 'package:flexistore_manager/installments/screens/installments_screen.dart';
 import 'package:flexistore_manager/inventory/screens/inventory_screen.dart';
 import 'package:flexistore_manager/pos/screens/pos_screen.dart';
-import 'package:flutter/material.dart';
+import 'package:flexistore_manager/returns/screens/returns_screen.dart';
 import 'package:go_router/go_router.dart';
 
 import 'app_shell.dart';
@@ -13,21 +13,13 @@ import '../dashboard/screens/dashboard_screen.dart';
 import '../audit/screens/transactions_history_screen.dart';
 import '../audit/screens/inventory_history_screen.dart';
 
-class InstallmentsScreen extends StatelessWidget {
-  const InstallmentsScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('Installments Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
-
-class ReturnsScreen extends StatelessWidget {
-  const ReturnsScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(
-    child: Text('Returns Module', style: TextStyle(color: Colors.white, fontSize: 24)),
-  );
-}
+// class InstallmentsScreen extends StatelessWidget {
+//   const InstallmentsScreen({super.key});
+//   @override
+//   Widget build(BuildContext context) => const Center(
+//     child: Text('Installments Module', style: TextStyle(color: Colors.white, fontSize: 24)),
+//   );
+// }
 
 final appRouter = GoRouter(
   initialLocation: '/login',
@@ -77,7 +69,7 @@ final appRouter = GoRouter(
           path: '/inventory_history',
           builder: (context, state) => const InventoryHistoryScreen(),
         ),
-        GoRoute(path: '/returns', builder: (context, state) => const AuditDebugScreen()),
+        GoRoute(path: '/returns', builder: (context, state) => const ReturnsScreen()),
       ],
     ),
   ],
