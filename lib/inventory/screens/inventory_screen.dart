@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../data/inventory_ffi.dart';
-import '../widgets/add_edit_product_dialog.dart';
-import '../widgets/product_table.dart';
 
 class InventoryScreen extends StatefulWidget {
   const InventoryScreen({super.key});
@@ -12,14 +10,14 @@ class InventoryScreen extends StatefulWidget {
 }
 
 class _InventoryScreenState extends State<InventoryScreen> {
-  // ── App Palette ────────────────────────────────────────────────────────
+  // ── App Palette (matches the rest of the app) ──────────────────────────────
   static const _bg = Color(0xFF0F172A);
   static const _surface = Color(0xFF1E293B);
   static const _border = Color(0xFF334155);
   static const _textSub = Color(0xFF94A3B8);
   static const _accent = Color(0xFF3B82F6);
+  // ──────────────────────────────────────────────────────────────────────────
 
-  // ── State ──────────────────────────────────────────────────────────────
   bool _isLoading = true;
   List<Product> _products = [];
   InventoryStats _stats = InventoryStats(
@@ -29,124 +27,80 @@ class _InventoryScreenState extends State<InventoryScreen> {
   );
   Timer? _debounce;
 
-  String _selectedCategory = 'All Categories';
-  String _searchQuery = '';
+  String _selectedCategory = "All Categories";
+  String _searchQuery = "";
 
-  static const List<String> _categories = [
-    'All Categories',
-    'Electronics',
-    'Audio',
-    'Accessories',
-    'Peripherals',
-    'General',
+  final List<String> _categories = [
+    "All Categories",
+    "Electronics",
+    "Audio",
+    "Accessories",
+    "Peripherals",
   ];
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────
-
-  @override
-  void initState() {
-    super.initState();
-    _refreshAll();
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
-  }
-
-  // ── Data Loading ───────────────────────────────────────────────────────
-
-  /// Refreshes both the product list and the stats cards.
-  Future<void> _refreshAll() async {
+  void _updateInventory() {
     setState(() => _isLoading = true);
-    await Future.wait([_loadProducts(), _loadStats()]);
-    if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _loadProducts() async {
-    try {
-      final products = await InventoryFFI.instance
-          .getFilteredInventory(_searchQuery, _selectedCategory);
-      if (mounted) {
-        setState(() => _products = products);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showError('Error loading products: $e');
-      }
-    }
-  }
-
-  Future<void> _loadStats() async {
-    try {
-      final stats = await InventoryFFI.instance.getStats();
-      if (mounted) {
-        setState(() => _stats = stats);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showError('Error loading stats: $e');
-      }
-    }
+    InventoryFFI.instance
+        .getFilteredInventory(_searchQuery, _selectedCategory)
+        .then((products) {
+          if (mounted) {
+            setState(() {
+              _products = products;
+              _isLoading = false;
+            });
+            _loadData(); // تحديث إحصائيات الكروت أيضاً
+          }
+        })
+        .catchError((e) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error loading products: $e'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+        });
   }
 
   void _onSearchChanged(String query) {
     _searchQuery = query;
-    _debounce?.cancel();
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      _refreshAll();
+      _updateInventory();
     });
   }
 
-  void _onCategoryChanged(String? category) {
-    if (category != null && category != _selectedCategory) {
-      setState(() => _selectedCategory = category);
-      _refreshAll();
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+    _updateInventory();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final stats = await InventoryFFI.instance.getStats();
+      if (mounted) {
+        setState(() {
+          _stats = stats;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading inventory: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
     }
   }
 
-  // ── Dialogs ────────────────────────────────────────────────────────────
-
-  void _showAddDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AddEditProductDialog(
-        onComplete: (success) {
-          if (success) _refreshAll();
-          if (success && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Product added successfully!'),
-                backgroundColor: Color(0xFF10B981),
-              ),
-            );
-          }
-        },
-      ),
-    );
-  }
-
-  void _showEditDialog(Product product) {
-    showDialog(
-      context: context,
-      builder: (_) => AddEditProductDialog(
-        product: product,
-        onComplete: (success) {
-          if (success) _refreshAll();
-          if (success && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Product updated successfully!'),
-                backgroundColor: Color(0xFF10B981),
-              ),
-            );
-          }
-        },
-      ),
-    );
-  }
-
+  // ── Delete Dialog ──────────────────────────────────────────────────────────
   void _showDeleteDialog(Product product) {
     showDialog(
       context: context,
@@ -157,7 +111,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
           side: const BorderSide(color: _border),
         ),
         title: const Text(
-          'Deactivate Product?',
+          'Delete Product?',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         content: Column(
@@ -165,29 +119,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Are you sure you want to deactivate "${product.name}"?',
+              'Are you sure you want to delete "${product.name}"?',
               style: const TextStyle(color: _textSub),
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF59E0B).withValues(alpha: 0.08),
-                border: Border.all(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+                color: Colors.redAccent.withOpacity(0.08),
+                border: Border.all(color: Colors.redAccent.withOpacity(0.4)),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline,
-                      color: Color(0xFFF59E0B), size: 18),
+                  Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'The product will be deactivated and hidden from inventory. '
-                      'Invoice history will be preserved.',
-                      style:
-                          TextStyle(color: Color(0xFFF59E0B), fontSize: 13),
+                      'This action cannot be undone. The product will be removed from the inventory.',
+                      style: TextStyle(color: Colors.redAccent, fontSize: 13),
                     ),
                   ),
                 ],
@@ -206,45 +156,321 @@ class _InventoryScreenState extends State<InventoryScreen> {
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
               setState(() => _isLoading = true);
-              final result =
-                  await InventoryFFI.instance.deleteProduct(product.id);
-              if (result == 0) {
-                _refreshAll();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Product deactivated successfully.'),
-                      backgroundColor: Color(0xFF10B981),
-                    ),
-                  );
-                }
+              final ok = await InventoryFFI.instance.deleteProduct(product.id);
+              if (ok) {
+                _loadData();
               } else {
                 setState(() => _isLoading = false);
                 if (mounted) {
-                  _showError('Failed to deactivate product (code: $result)');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Failed to delete product'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
                 }
               }
             },
-            child: const Text('Deactivate'),
+            child: const Text('Delete'),
           ),
         ],
       ),
     );
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+  // ── Add Product Dialog ─────────────────────────────────────────────────────
+  void _showAddProductDialog() {
+    final formKey = GlobalKey<FormState>();
+    final nameCtrl = TextEditingController();
+    final barcodeCtrl = TextEditingController();
+    final purchCtrl = TextEditingController();
+    final sellCtrl = TextEditingController();
+    final qtyCtrl = TextEditingController();
+    String newCategory = "Electronics";
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => Dialog(
+          backgroundColor: _surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: _border),
+          ),
+          child: Container(
+            width: 500,
+            padding: const EdgeInsets.all(24),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.inventory_2, color: _accent),
+                          SizedBox(width: 8),
+                          Text(
+                            'Add New Product',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: _textSub),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildField(
+                    'Product Name',
+                    nameCtrl,
+                    icon: Icons.label_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    'Barcode / SKU',
+                    barcodeCtrl,
+                    icon: Icons.qr_code,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: newCategory,
+                    dropdownColor: _surface,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      labelText: 'Category',
+                      labelStyle: const TextStyle(color: _textSub),
+                      prefixIcon: const Icon(
+                        Icons.category,
+                        color: _textSub,
+                        size: 20,
+                      ),
+                      filled: true,
+                      fillColor: _bg,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: _border),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: _accent),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    items: _categories.where((c) => c != "All Categories").map((
+                      c,
+                    ) {
+                      return DropdownMenuItem(value: c, child: Text(c));
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setDialogState(() => newCategory = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildField(
+                          'Purchase Price',
+                          purchCtrl,
+                          isNumber: true,
+                          icon: Icons.attach_money,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildField(
+                          'Selling Price',
+                          sellCtrl,
+                          isNumber: true,
+                          icon: Icons.sell_outlined,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildField(
+                    'Initial Quantity',
+                    qtyCtrl,
+                    isNumber: true,
+                    icon: Icons.numbers,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Info box
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.08),
+                      border: Border.all(
+                        color: const Color(0xFFF59E0B).withOpacity(0.4),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Color(0xFFF59E0B),
+                          size: 18,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Important:',
+                                style: TextStyle(
+                                  color: Color(0xFFF59E0B),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              Text(
+                                '• Ensure barcode is unique.',
+                                style: TextStyle(
+                                  color: Color(0xFFF59E0B),
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                '• Stock warnings appear automatically.',
+                                style: TextStyle(
+                                  color: Color(0xFFF59E0B),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Buttons
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: TextButton.styleFrom(foregroundColor: _textSub),
+                        child: const Text('Cancel'),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _accent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () async {
+                          if (formKey.currentState!.validate()) {
+                            Navigator.pop(ctx);
+                            setState(() => _isLoading = true);
+                            final ok = await InventoryFFI.instance.addProduct(
+                              barcodeCtrl.text,
+                              nameCtrl.text,
+                              newCategory,
+                              double.tryParse(purchCtrl.text) ?? 0.0,
+                              double.tryParse(sellCtrl.text) ?? 0.0,
+                              int.tryParse(qtyCtrl.text) ?? 0,
+                            );
+                            if (ok) {
+                              _loadData();
+                            } else {
+                              setState(() => _isLoading = false);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Failed to add product. Please check console logs for the error code.'),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            }
+                          }
+                        },
+                        child: const Text('Add Product'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────
+  // ── Text Field Helper ──────────────────────────────────────────────────────
+  Widget _buildField(
+    String label,
+    TextEditingController ctrl, {
+    bool isNumber = false,
+    IconData? icon,
+  }) {
+    return TextFormField(
+      controller: ctrl,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      style: const TextStyle(color: Colors.white),
+      validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: _textSub),
+        prefixIcon: icon != null ? Icon(icon, color: _textSub, size: 20) : null,
+        filled: true,
+        fillColor: _bg,
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: _border),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: _accent),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.redAccent),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.redAccent),
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
 
+  // ── Main Build ─────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -254,25 +480,266 @@ class _InventoryScreenState extends State<InventoryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Header ───────────────────────────────────────────────
-            _buildHeader(),
+            // ── Top Bar ──────────────────────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Inventory Management',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                ElevatedButton.icon(
+                  onPressed: _showAddProductDialog,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Product'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _accent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 32),
 
-            // ── Stat Cards ───────────────────────────────────────────
-            _buildStatCards(),
-            const SizedBox(height: 32),
+            // ── Stat Cards ───────────────────────────────────────────────────
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                    'Total Products',
+                    _stats.totalProducts.toString(),
+                    Icons.inventory_2_outlined,
+                    const Color(0xFF10B981),
+                    const Color(0xFF064E3B),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: _statCard(
+                    'Low Stock Items',
+                    _stats.lowStockItems.toString(),
+                    Icons.warning_amber_rounded,
+                    const Color(0xFFF59E0B),
+                    const Color(0xFF78350F),
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: _statCard(
+                    'Total Value',
+                    '\$${_stats.totalValue.toStringAsFixed(2)}',
+                    Icons.attach_money,
+                    _accent,
+                    const Color(0xFF1E3A8A),
+                  ),
+                ),
+              ],
+            ),
+            // ─── الجزء المفقود (Search & Category Filter) ───
+            const SizedBox(height: 32), // مسافة بعد الكروت
+            Row(
+              children: [
+                // 1. خانة البحث (Search Bar)
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B), // لون الـ Surface
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF334155)),
+                    ),
+                    child: TextField(
+                      onChanged: _onSearchChanged, // الدالة اللي بكلم بيها الـ C++
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: "Search by product name or SKU...",
+                        hintStyle: TextStyle(color: Color(0xFF94A3B8)),
+                        prefixIcon: Icon(Icons.search, color: Color(0xFF94A3B8)),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // 2. قائمة التصنيفات (Dropdown)
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    height: 50,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFF334155)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCategory,
+                        dropdownColor: const Color(0xFF1E293B),
+                        style: const TextStyle(color: Colors.white),
+                        icon: const Icon(Icons.filter_list, color: Color(0xFF94A3B8)),
+                        isExpanded: true,
+                        items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setState(() => _selectedCategory = val);
+                            _updateInventory(); // تحديث الجدول بناءً على التصنيف
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24), // مسافة قبل الجدول
 
-            // ── Search & Filter ──────────────────────────────────────
-            _buildSearchBar(),
-            const SizedBox(height: 24),
-
-            // ── Products Table ───────────────────────────────────────
+            // ── Products Table ───────────────────────────────────────────────
             Expanded(
-              child: ProductTable(
-                products: _products,
-                isLoading: _isLoading,
-                onEdit: _showEditDialog,
-                onDelete: _showDeleteDialog,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: _border),
+                ),
+                child: _isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: _accent),
+                      )
+                    : _products.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No products available.',
+                          style: TextStyle(color: _textSub, fontSize: 16),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        child: DataTable(
+                          headingRowColor: WidgetStateProperty.all(
+                            const Color(0xFF0F172A),
+                          ),
+                          dataRowColor: WidgetStateProperty.resolveWith((
+                            states,
+                          ) {
+                            if (states.contains(WidgetState.hovered)) {
+                              return Colors.white.withOpacity(0.04);
+                            }
+                            return Colors.transparent;
+                          }),
+                          dividerThickness: 1,
+                          headingTextStyle: const TextStyle(
+                            color: _textSub,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          dataTextStyle: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                          columns: const [
+                            DataColumn(label: Text('ID')),
+                            DataColumn(label: Text('Barcode')),
+                            DataColumn(label: Text('Name')),
+                            DataColumn(label: Text('Category')),
+                            DataColumn(label: Text('Selling Price')),
+                            DataColumn(label: Text('Stock')),
+                            DataColumn(label: Text('Actions')),
+                          ],
+                          rows: _products.map((p) {
+                            final lowStock = p.stockQuantity <= 10;
+                            final stockColor = lowStock
+                                ? const Color(0xFFEF4444)
+                                : const Color(0xFF10B981);
+                            return DataRow(
+                              cells: [
+                                DataCell(
+                                  Text(
+                                    '#${p.id}',
+                                    style: const TextStyle(color: _textSub),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    p.barcode,
+                                    style: const TextStyle(color: _textSub),
+                                  ),
+                                ),
+                                DataCell(Text(p.name)),
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: _accent.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      p.category,
+                                      style: const TextStyle(
+                                        color: _accent,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  Text(
+                                    '\$${p.sellingPrice.toStringAsFixed(2)}',
+                                  ),
+                                ),
+                                DataCell(
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: stockColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: stockColor.withOpacity(0.4),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${p.stockQuantity}',
+                                      style: TextStyle(
+                                        color: stockColor,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                DataCell(
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.delete_outline,
+                                      color: Color(0xFFEF4444),
+                                    ),
+                                    onPressed: () => _showDeleteDialog(p),
+                                    tooltip: 'Delete Product',
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
               ),
             ),
           ],
@@ -281,184 +748,27 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Inventory Management',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${_stats.totalProducts} products • ${_stats.lowStockItems} low stock',
-              style: const TextStyle(color: _textSub, fontSize: 14),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: _refreshAll,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Refresh'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: _textSub,
-                side: const BorderSide(color: _border),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            ElevatedButton.icon(
-              onPressed: _showAddDialog,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Product'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _accent,
-                foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatCards() {
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            title: 'Total Products',
-            value: _stats.totalProducts.toString(),
-            icon: Icons.inventory_2_outlined,
-            iconColor: const Color(0xFF10B981),
-          ),
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: _StatCard(
-            title: 'Low Stock Items',
-            value: _stats.lowStockItems.toString(),
-            icon: Icons.warning_amber_rounded,
-            iconColor: const Color(0xFFF59E0B),
-          ),
-        ),
-        const SizedBox(width: 24),
-        Expanded(
-          child: _StatCard(
-            title: 'Total Value',
-            value: '\$${_stats.totalValue.toStringAsFixed(2)}',
-            icon: Icons.attach_money,
-            iconColor: _accent,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar() {
-    return Row(
-      children: [
-        // Search field
-        Expanded(
-          flex: 3,
-          child: Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _border),
-            ),
-            child: TextField(
-              onChanged: _onSearchChanged,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                hintText: 'Search by product name or barcode...',
-                hintStyle: TextStyle(color: _textSub),
-                prefixIcon: Icon(Icons.search, color: _textSub),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        // Category dropdown
-        Expanded(
-          flex: 1,
-          child: Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: _surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _border),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedCategory,
-                dropdownColor: _surface,
-                style: const TextStyle(color: Colors.white),
-                icon: const Icon(Icons.filter_list, color: _textSub),
-                isExpanded: true,
-                items: _categories
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: _onCategoryChanged,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Private Stat Card Widget ─────────────────────────────────────────────────
-
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color iconColor;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.iconColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  // ── Stat Card Widget ───────────────────────────────────────────────────────
+  Widget _statCard(
+    String title,
+    String value,
+    IconData icon,
+    Color iconColor,
+    Color iconBg,
+  ) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: _border),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.12),
+              color: iconColor.withOpacity(0.12),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: iconColor, size: 28),
@@ -469,8 +779,7 @@ class _StatCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
-                    color: Color(0xFF94A3B8), fontSize: 13),
+                style: const TextStyle(color: _textSub, fontSize: 13),
               ),
               const SizedBox(height: 4),
               Text(

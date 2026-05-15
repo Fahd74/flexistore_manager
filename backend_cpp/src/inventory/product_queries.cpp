@@ -25,7 +25,7 @@ FLEXISTORE_EXPORT const char* get_all_products(int user_id) {
         pool.releaseConnection(std::move(conn));
         
         return allocate_ffi_string(json);
-    } catch (sql::SQLException&) {
+    } catch (sql::SQLException& e) {
         pool.releaseConnection(std::move(conn));
         return nullptr;
     }
@@ -63,7 +63,7 @@ FLEXISTORE_EXPORT const char* get_inventory_stats(int user_id) {
         pool.releaseConnection(std::move(conn));
         
         return allocate_ffi_string(jb.build());
-    } catch (sql::SQLException&) {
+    } catch (sql::SQLException& e) {
         pool.releaseConnection(std::move(conn));
         return nullptr;
     }
@@ -77,7 +77,7 @@ FLEXISTORE_EXPORT const char* get_filtered_inventory(int user_id, const char* se
     try {
         // بناء الاستعلام بناءً على البحث والتصنيف
         string sql = "SELECT id, barcode, name, category, purchase_price, selling_price, stock_quantity, status "
-                    "FROM products WHERE status != 'inactive' AND (name LIKE ? OR barcode LIKE ?)";
+                     "FROM products WHERE status != 'inactive' AND (name LIKE ? OR barcode LIKE ?)";
         
         string cat_str = category ? string(category) : "All Categories";
         if (cat_str != "All Categories") {
@@ -102,76 +102,11 @@ FLEXISTORE_EXPORT const char* get_filtered_inventory(int user_id, const char* se
         pool.releaseConnection(std::move(conn));
         
         return allocate_ffi_string(json);
-    } catch (sql::SQLException&) {
-        pool.releaseConnection(std::move(conn));
-        return allocate_ffi_string("[]");
-    }
-}
-
-FLEXISTORE_EXPORT const char* get_product_by_barcode(int user_id, const char* barcode) {
-    if (!barcode || string(barcode).empty()) return nullptr;
-
-    auto& pool = DBConnectionPool::getInstance();
-    auto conn = pool.getConnection();
-    if (!conn) return nullptr;
-
-    try {
-        unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(
-            "SELECT id, barcode, name, category, purchase_price, selling_price, stock_quantity, status "
-            "FROM products WHERE barcode = ? AND status != 'inactive' LIMIT 1"
-        ));
-        pstmt->setString(1, barcode);
-        unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
-
-        if (!res->next()) {
-            pool.releaseConnection(std::move(conn));
-            return nullptr; // Product not found
-        }
-
-        JsonBuilder jb;
-        jb.start_object();
-        jb.add_int("id", res->getInt("id"));
-        jb.add_string("barcode", res->getString("barcode"));
-        jb.add_string("name", res->getString("name"));
-        jb.add_string("category", res->getString("category"));
-        jb.add_double("purchase_price", res->getDouble("purchase_price"));
-        jb.add_double("selling_price", res->getDouble("selling_price"));
-        jb.add_int("stock_quantity", res->getInt("stock_quantity"));
-        jb.add_string("status", res->getString("status"));
-        jb.end_object();
-
-        pool.releaseConnection(std::move(conn));
-        return allocate_ffi_string(jb.build());
-    } catch (sql::SQLException&) {
-        pool.releaseConnection(std::move(conn));
-        return nullptr;
-    }
-}
-
-FLEXISTORE_EXPORT const char* get_low_stock_products(int user_id, int threshold) {
-    if (threshold <= 0) threshold = 10; // Default threshold
-
-    auto& pool = DBConnectionPool::getInstance();
-    auto conn = pool.getConnection();
-    if (!conn) return allocate_ffi_string("[]");
-
-    try {
-        unique_ptr<sql::PreparedStatement> pstmt(conn->prepareStatement(
-            "SELECT id, barcode, name, category, purchase_price, selling_price, stock_quantity, status "
-            "FROM products WHERE status != 'inactive' AND stock_quantity <= ? "
-            "ORDER BY stock_quantity ASC"
-        ));
-        pstmt->setInt(1, threshold);
-        unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
-
-        string json = JsonBuilder::result_set_to_json(res.get());
-        pool.releaseConnection(std::move(conn));
-
-        return allocate_ffi_string(json);
-    } catch (sql::SQLException&) {
+    } catch (sql::SQLException& e) {
         pool.releaseConnection(std::move(conn));
         return allocate_ffi_string("[]");
     }
 }
 
 } // extern "C"
+

@@ -49,12 +49,12 @@ int restock_product(int product_id, int qty, int user_id, sql::Connection* conn)
 
         // Log the change
         const char* action = (qty > 0) ? "RESTOCK" : "SALE";
-        log_inventory_change(product_id, user_id, action, qty, conn);
+        log_inventory_change(product_id, user_id, action, qty);
 
         if (own_conn) DBConnectionPool::getInstance().releaseConnection(std::move(local_conn_ptr));
         return FFI_SUCCESS;
 
-    } catch (sql::SQLException&) {
+    } catch (sql::SQLException& e) {
         if (own_conn) DBConnectionPool::getInstance().releaseConnection(std::move(local_conn_ptr));
         return FFI_ERROR_DB_QUERY;
     }

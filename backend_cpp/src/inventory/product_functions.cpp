@@ -118,7 +118,7 @@ FLEXISTORE_EXPORT int update_product(int user_id, int product_id, const char* ba
         log_inventory_change(product_id, user_id, "UPDATE", 0);
         return FFI_SUCCESS;
 
-    } catch (sql::SQLException&) {
+    } catch (sql::SQLException& e) {
         pool.releaseConnection(std::move(conn));
         return FFI_ERROR_DB_QUERY;
     }
@@ -144,7 +144,7 @@ FLEXISTORE_EXPORT int soft_delete_product(int user_id, int product_id) {
         log_inventory_change(product_id, user_id, "DELETE", 0);
         return FFI_SUCCESS;
 
-    } catch (sql::SQLException&) {
+    } catch (sql::SQLException& e) {
         pool.releaseConnection(std::move(conn));
         return FFI_ERROR_DB_QUERY;
     }
