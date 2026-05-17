@@ -5,12 +5,12 @@ import '../data/clients_ffi.dart';
 import '../../auth/data/session_ffi.dart';
 
 // -- الألوان --
-const kBackgroundColor = Color(0xFF0F171E);
-const kCardColor = Color(0xFF192229);
-const kAccentColor = Color(0xFF007AFF);
+const kBackgroundColor = Color(0xFF0F172A);
+const kCardColor = Color(0xFF1E293B);
+const kAccentColor = Color(0xFF3B82F6);
 const kTextPrimary = Colors.white;
-const kTextSecondary = Color(0xFF8E99A3);
-const kDividerColor = Color(0xFF2C363F);
+const kTextSecondary = Color(0xFF94A3B8);
+const kDividerColor = Color(0xFF334155);
 
 const kGreenBg = Color(0xFF0B251E);
 const kGreenText = Color(0xFF2ECC71);

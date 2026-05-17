@@ -56,6 +56,7 @@ static const char* SQL_CREATE_CLIENTS =
     "  address        VARCHAR(255)  DEFAULT NULL,"
     "  notes          TEXT          DEFAULT NULL,"
     "  total_debt     DECIMAL(12,2) NOT NULL DEFAULT 0.00,"
+    "  client_type    VARCHAR(50)   NOT NULL DEFAULT 'Regular',"
     "  created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
     "  updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
@@ -245,6 +246,17 @@ FLEXISTORE_EXPORT int initialize_database() {
             }
         }
 
+        // ── Step 3.3: Run schema migration for client_type ───────────────
+        try {
+            unique_ptr<sql::Statement> alter_stmt(guard.c->createStatement());
+            alter_stmt->execute("ALTER TABLE clients ADD COLUMN client_type VARCHAR(50) NOT NULL DEFAULT 'Regular' AFTER total_debt");
+            cout << "[db_initializer] Migration: Added 'client_type' column to clients table." << endl;
+        } catch (sql::SQLException& e) {
+            if (e.getErrorCode() != 1060) {
+                cout << "[db_initializer] Warning on ALTER TABLE clients: " << e.what() << endl;
+            }
+        }
+
         // ── Step 4: Seed default users if users table is empty ────
         {
             unique_ptr<sql::Statement> stmt(guard.c->createStatement());
@@ -271,14 +283,14 @@ FLEXISTORE_EXPORT int initialize_database() {
                 "SELECT COUNT(*) AS cnt FROM products"
             ));
 
-            if (rs->next() && rs->getInt("cnt") == 0) {
-                unique_ptr<sql::Statement> insert_stmt(guard.c->createStatement());
-                insert_stmt->execute(
-                    "INSERT INTO products (id, barcode, name, category, purchase_price, selling_price, stock_quantity, status) VALUES "
-                    "(1, '1234567890123', 'Dummy Product', 'General', 10.00, 15.00, 100, 'active')"
-                );
-                cout << "[db_initializer] Dummy product seeded for FFI testing." << endl;
-            }
+            // if (rs->next() && rs->getInt("cnt") == 0) {
+            //     unique_ptr<sql::Statement> insert_stmt(guard.c->createStatement());
+            //     insert_stmt->execute(
+            //         "INSERT INTO products (id, barcode, name, category, purchase_price, selling_price, stock_quantity, status) VALUES "
+            //         "(1, '1234567890123', 'Dummy Product', 'General', 10.00, 15.00, 100, 'active')"
+            //     );
+            //     cout << "[db_initializer] Dummy product seeded for FFI testing." << endl;
+            // }
         }
 
         cout << "[db_initializer] ✔ Database initialization complete." << endl;

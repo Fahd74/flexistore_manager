@@ -115,7 +115,8 @@ class _SidebarWidgetState extends State<SidebarWidget> {
                   itemCount: menuItems.length,
                   itemBuilder: (context, index) {
                     final item = menuItems[index];
-                    final isSelected = currentPath.startsWith(item['route'] as String);
+                    final String route = item['route'] as String;
+                    final isSelected = currentPath == route || currentPath.startsWith('$route/');
                     return _buildMenuItem(item, isSelected);
                   },
                 ),
